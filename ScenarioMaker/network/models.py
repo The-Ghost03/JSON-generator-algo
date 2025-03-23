@@ -1,72 +1,71 @@
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-
-class Node(models.Model):
-    class NodeType(models.TextChoices):
+class Noeud(models.Model):
+    class TypeNoeud(models.TextChoices):
         HUB = 'hub', _('Hub principal')
-        RELAY = 'relay', _('Relais intermédiaire')
+        RELAIS = 'relais', _('Relais intermédiaire')
         CLIENT = 'client', _('Client final')
 
-    name = models.CharField(max_length=100)
-    node_type = models.CharField(max_length=10, choices=NodeType.choices)
+    nom = models.CharField(max_length=100)
+    type_noeud = models.CharField(max_length=10, choices=TypeNoeud.choices)
     latitude = models.FloatField()
     longitude = models.FloatField()
-    capacity = models.IntegerField()
+    capacite = models.IntegerField()
 
     def __str__(self):
-        return f"{self.name} ({self.node_type})"
+        return f"{self.nom} ({self.type_noeud})"
 
 
-class Edge(models.Model):
-    class RoadType(models.IntegerChoices):
+class Arete(models.Model):
+    class TypeRoute(models.IntegerChoices):
         ASPHALTE = 0, _('Asphalte')
         LATERITE = 1, _('Latérite')
         PISTE = 2, _('Piste')
 
-    source = models.ForeignKey(Node, related_name='edges_from', on_delete=models.CASCADE)
-    destination = models.ForeignKey(Node, related_name='edges_to', on_delete=models.CASCADE)
+    source = models.ForeignKey(Noeud, related_name='aretes_depuis', on_delete=models.CASCADE)
+    destination = models.ForeignKey(Noeud, related_name='aretes_vers', on_delete=models.CASCADE)
     distance = models.FloatField(help_text="Distance en kilomètres")
-    base_time = models.FloatField(help_text="Temps de parcours nominal en minutes")
-    cost = models.FloatField(help_text="Coût monétaire de la traversée")
-    road_type = models.IntegerField(choices=RoadType.choices)
-    reliability = models.FloatField(help_text="Fiabilité [0-1]")
-    restrictions = models.IntegerField(help_text="Ex: 1 = fragile, 2 = express, 4 = poids_max")
-    time_variation_morning = models.FloatField(default=1.0)
-    time_variation_afternoon = models.FloatField(default=1.0)
-    time_variation_night = models.FloatField(default=1.0)
+    temps_base = models.FloatField(help_text="Temps de parcours nominal en minutes")
+    cout = models.FloatField(help_text="Coût monétaire de la traversée")
+    type_route = models.IntegerField(choices=TypeRoute.choices)
+    fiabilite = models.FloatField(help_text="Fiabilité [0-1]")
+    restrictions = models.IntegerField(help_text="Ex : 1 = fragile, 2 = express, 4 = poids maximum")
+    variation_temps_matin = models.FloatField(default=1.0)
+    variation_temps_apresmidi = models.FloatField(default=1.0)
+    variation_temps_nuit = models.FloatField(default=1.0)
 
     def __str__(self):
-        return f"{self.source.name} → {self.destination.name}"
+        return f"{self.source.nom} → {self.destination.nom}"
 
 
-class Vehicle(models.Model):
-    class VehicleType(models.TextChoices):
+class Vehicule(models.Model):
+    class TypeVehicule(models.TextChoices):
         CAMION = 'camion', _('Camion')
         UTILITAIRE = 'utilitaire', _('Utilitaire')
         REFRIGERE = 'refrigere', _('Réfrigéré')
 
-    type = models.CharField(max_length=20, choices=VehicleType.choices)
-    capacity = models.IntegerField()
-    availability_start = models.TimeField()
-    availability_end = models.TimeField()
-    cost_per_km = models.FloatField(help_text="Coût en FCFA par km")
+    type_vehicule = models.CharField(max_length=20, choices=TypeVehicule.choices)
+    capacite = models.IntegerField()
+    disponibilite_debut = models.TimeField()
+    disponibilite_fin = models.TimeField()
+    cout_par_km = models.FloatField(help_text="Coût en FCFA par km")
 
     def __str__(self):
-        return f"{self.get_type_display()} ({self.capacity} kg)"
+        return f"{self.get_type_vehicule_display()} ({self.capacite} kg)"
 
 
-class DeliveryRequest(models.Model):
-    class Priority(models.TextChoices):
+class DemandeLivraison(models.Model):
+    class Priorite(models.TextChoices):
         STANDARD = 'standard', _('Standard')
         EXPRESS = 'express', _('Express')
         FRAGILE = 'fragile', _('Fragile')
 
-    origin = models.ForeignKey(Node, related_name='delivery_origins', on_delete=models.CASCADE)
-    destination = models.ForeignKey(Node, related_name='delivery_destinations', on_delete=models.CASCADE)
+    origine = models.ForeignKey(Noeud, related_name='livraisons_origine', on_delete=models.CASCADE)
+    destination = models.ForeignKey(Noeud, related_name='livraisons_destination', on_delete=models.CASCADE)
     volume = models.IntegerField()
-    priority = models.CharField(max_length=10, choices=Priority.choices)
-    deadline = models.TimeField()
+    priorite = models.CharField(max_length=10, choices=Priorite.choices)
+    echeance = models.TimeField()
 
     def __str__(self):
-        return f"{self.priority.capitalize()} {self.origin.name} → {self.destination.name}"
+        return f"{self.priorite.capitalize()} {self.origine.nom} → {self.destination.nom}"
