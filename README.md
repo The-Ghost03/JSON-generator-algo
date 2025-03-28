@@ -76,5 +76,5 @@ Ce projet est écrit en C et ne nécessite aucune bibliothèque externe.
 Pour compiler le projet, utilisez GCC (ou un autre compilateur C) en ligne de commande :
 
 ```bash
-gcc hybrid_list_generic.c -o hybrid_list_generic.exe
+gcc xml-json-parseur.c -o xml-json-parseur.exe
 ```
