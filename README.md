@@ -1,75 +1,80 @@
-# 💼 Système de Gestion de Stock - Django
+# Hybrid JSON/XML Parser
 
-Ce projet est une application web développée avec Django, conçue pour gérer les stocks d'une entreprise avec plusieurs rôles : administrateur, responsable de stock et vendeur.
+Ce projet implémente un parseur hybride en langage C capable de traiter des fichiers JSON et XML.  
+Le parseur lit le fichier d'entrée, détecte automatiquement le format (JSON ou XML), et construit une structure hiérarchique du document.  
+Ensuite, il parcourt récursivement cette structure pour extraire **tous les éléments principaux** (à tous les niveaux) dans une liste chaînée générique.
 
-## 🚀 Fonctionnalités principales
+## Table des matières
 
-- Gestion des produits, clients et fournisseurs
-- Saisie des ventes et des approvisionnements
-- Mise à jour automatique du stock
-- Rôles utilisateurs avec permissions (Opérateur, Gestionnaire)
-- Interface d'administration centralisée
+- [Description](#description)
+- [Fonctionnalités](#fonctionnalités)
+- [Structure du projet](#structure-du-projet)
+- [Installation](#installation)
+- [Utilisation](#utilisation)
+- [Extensions possibles](#extensions-possibles)
+- [Contribuer](#contribuer)
+- [Licence](#licence)
 
-## 🛠️ Installation du projet
+## Description
 
-1. **Cloner le dépôt :**
+Ce parseur hybride est conçu pour faciliter la lecture et l’analyse de fichiers JSON et XML dans le cadre d’un projet d’algorithmique.  
+Il se compose de deux modules principaux :
+
+- **Module JSON**
+
+  - Tokenisation et parsing récursif pour construire une arborescence (structure `JsonValue`).
+  - Extraction récursive de tous les éléments (champ et valeurs) dans une liste chaînée générique.
+
+- **Module XML (minimal)**
+  - Parsing d’un XML minimal pour extraire les balises, attributs, contenu textuel et enfants (structure `XmlNode`).
+  - Extraction récursive de tous les nœuds dans la même liste chaînée.
+
+La liste chaînée, définie via la structure `ElementRecord`, stocke pour chaque élément :
+
+- La **clé** (pour JSON : le nom du champ, pour XML : le nom de la balise)
+- Le **contenu** textuel (pour les valeurs primitives) ou le mot `"complex"` si l’élément est imbriqué (objet, tableau ou contient des enfants)
+
+## Fonctionnalités
+
+- **Détection automatique du format**  
+  Le programme détecte si le fichier est au format JSON (commence par `{` ou `[`) ou XML (commence par `<`).  
+  Il gère également la présence d’un BOM UTF-8 et peut ignorer un prologue XML (`<?xml ... ?>`) ou une déclaration DOCTYPE.
+
+- **Parsing récursif**  
+  Le parseur construit une structure hiérarchique pour le JSON ou le XML.  
+  Une fonction d’extraction récursive parcourt ensuite l’arborescence pour récupérer tous les éléments et les stocker dans une liste chaînée.
+
+- **Affichage**  
+  Le contenu analysé (structure JSON ou XML) est affiché dans la console pour vérification, ainsi que la liste chaînée des éléments extraits.
+
+## Structure du projet
+
+- **Tokenisation et Parsing JSON**
+  - Définition des tokens (structure `Token` et enum `TokenType`).
+  - Fonctions de tokenisation (`tokenize`), parsing récursif (`parse_json`, `parse_array`, `parse_object`).
+- **Parsing XML minimal**
+
+  - Fonctions pour sauter les espaces et analyser les balises (`xml_parse_tag`, `xml_parse_attributes`, `xml_parse_text`).
+  - Parsing récursif pour construire un arbre XML (`XmlNode`).
+
+- **Extraction récursive des éléments**
+
+  - Pour JSON : `extract_all_json_elements` qui parcourt toute l’arborescence.
+  - Pour XML : `extract_all_xml_elements` qui parcourt récursivement l’arbre XML.
+
+- **Liste chaînée générique**
+
+  - Structure `ElementRecord` pour stocker la clé et le contenu.
+  - Fonctions de création, d’ajout, d’affichage et de libération de la liste chaînée.
+
+- **Fonction de lecture de fichier**
+  - `read_file` permet de charger le contenu du fichier d'entrée.
+
+## Installation
+
+Ce projet est écrit en C et ne nécessite aucune bibliothèque externe.  
+Pour compiler le projet, utilisez GCC (ou un autre compilateur C) en ligne de commande :
 
 ```bash
-git clone https://github.com/The-Ghost03/Arch-Django.git
-cd Arch-Django
+gcc hybrid_list_generic.c -o hybrid_list_generic.exe
 ```
-
-2. **Créer et activer un environnement virtuel :**
-
-```bash
-python -m venv env
-env\Scripts\activate  # sous Windows
-```
-
-3. **Installer les dépendances :**
-
-```bash
-pip install -r requirements.txt
-```
-
-4. **Lancer les migrations :**
-
-```bash
-python manage.py makemigrations
-python manage.py migrate
-```
-
-5. **Lancer le serveur de test :**
-
-```bash
-python manage.py runserver
-```
-
-## 🔐 Accès utilisateurs
-
-| Rôle         | Nom d'utilisateur | Mot de passe          |
-| ------------ | ----------------- | --------------------- |
-| Super Admin  | `admin`           | `admin`               |
-| Boss (admin) | `boss`            | `cabinet-aurelis.com` |
-| Vendeur      | `vendeur`         | `cabinet-aurelis.com` |
-
-👉 Accédez au **back-office Django** ici :  
-📍 [http://127.0.0.1:8000/admin](http://127.0.0.1:8000/admin)
-
-## 📁 Contenu du projet
-
-- `stock/models.py` → Modèles des entités : produits, clients, commandes, fournisseurs, etc.
-- `stock/admin.py` → Interface d’administration enrichie (formulaires, inlines, rôles)
-- `stock/migrations/` → Historique des modifications de la base de données
-- `Diagrammes/` → Diagrammes UML (cas d’utilisation, classes, séquence) au format PlantUML (`.txt`) et `.png`
-- `README.md` → Documentation du projet
-- `requirements.txt` → Dépendances Python à installer
-
-## 📌 À savoir
-
-- Ce projet est lié au **devoir 1** d’Architecture des Systèmes d’Information.
-- Les syntaxes PlantUML utilisées pour générer les diagrammes
-
-## 📜 Licence
-
-Projet académique – tous droits réservés à Yao Konan Franck Schalôm © 2025.
