@@ -3,7 +3,9 @@
 #include <ctype.h>
 #include <string.h>
 
-// Définition des types de tokens
+///////////////////////
+// Définition des tokens
+///////////////////////
 typedef enum
 {
     TOKEN_BEGIN_OBJECT, // {
@@ -20,7 +22,6 @@ typedef enum
     TOKEN_UNKNOWN       // token non reconnu
 } TokenType;
 
-// Structure d'un token
 typedef struct
 {
     TokenType type;
@@ -35,13 +36,9 @@ Token create_token(TokenType type, const char *value)
     Token t;
     t.type = type;
     if (value != NULL)
-    {
         t.value = strdup(value);
-    }
     else
-    {
         t.value = NULL;
-    }
     return t;
 }
 
@@ -49,9 +46,7 @@ Token create_token(TokenType type, const char *value)
 void free_tokens(Token *tokens, int count)
 {
     for (int i = 0; i < count; i++)
-    {
         free(tokens[i].value);
-    }
     free(tokens);
 }
 
@@ -67,8 +62,8 @@ const char *skip_whitespace(const char *s)
 Token parse_number(const char **s)
 {
     const char *start = *s;
-    while (**s && (isdigit((unsigned char)**s) || **s == '.' || **s == '-' || **s == '+' ||
-                   **s == 'e' || **s == 'E'))
+    while (**s && (isdigit((unsigned char)**s) || **s == '.' || **s == '-' ||
+                   **s == '+' || **s == 'e' || **s == 'E'))
     {
         (*s)++;
     }
@@ -89,9 +84,7 @@ Token parse_string(const char **s)
     while (**s && **s != '"')
     {
         if (**s == '\\')
-        {
             (*s)++; // saut du caractère d'échappement
-        }
         (*s)++;
     }
     int len = *s - start;
@@ -174,12 +167,10 @@ Token *tokenize(const char *input, int *token_count)
         }
         else
         {
-            // Si un caractère inattendu est rencontré
             tokens[count++] = create_token(TOKEN_UNKNOWN, NULL);
             p++;
         }
 
-        // Réallocation si nécessaire
         if (count >= capacity)
         {
             capacity *= 2;
@@ -187,13 +178,12 @@ Token *tokenize(const char *input, int *token_count)
         }
     }
 
-    // Ajout d'un token EOF pour marquer la fin
     tokens[count++] = create_token(TOKEN_EOF, NULL);
     *token_count = count;
     return tokens;
 }
 
-// Fonction pour lire tout le contenu d'un fichier dans une chaîne
+// Fonction pour lire le contenu d'un fichier dans une chaîne
 char *read_file(const char *filename)
 {
     FILE *fp = fopen(filename, "rb");
@@ -205,7 +195,6 @@ char *read_file(const char *filename)
     fseek(fp, 0, SEEK_END);
     long filesize = ftell(fp);
     rewind(fp);
-
     char *buffer = malloc(filesize + 1);
     if (!buffer)
     {
@@ -218,7 +207,7 @@ char *read_file(const char *filename)
     return buffer;
 }
 
-// Fonction pour écrire le contenu reconstruit dans un fichier de sortie
+// Fonction pour écrire les tokens dans un fichier de sortie (optionnel)
 void write_tokens_to_file(const char *filename, Token *tokens, int token_count)
 {
     FILE *fp = fopen(filename, "w");
@@ -227,8 +216,6 @@ void write_tokens_to_file(const char *filename, Token *tokens, int token_count)
         perror("Erreur ouverture fichier de sortie");
         return;
     }
-
-    // Pour chaque token, réassemble la chaîne JSON
     for (int i = 0; i < token_count; i++)
     {
         switch (tokens[i].type)
@@ -264,23 +251,193 @@ void write_tokens_to_file(const char *filename, Token *tokens, int token_count)
         case TOKEN_EOF:
             break;
         case TOKEN_UNKNOWN:
-            // Ignorer les tokens inconnus
             break;
         }
     }
     fclose(fp);
 }
 
+///////////////////////
+// Structures et fonctions pour la liste chaînée des nœuds
+///////////////////////
+typedef struct NodeRecord
+{
+    int id;
+    char *nom;
+    char *type_noeud;
+    float latitude;
+    float longitude;
+    int capacite;
+    struct NodeRecord *next;
+} NodeRecord;
+
+NodeRecord *create_node_record()
+{
+    NodeRecord *node = (NodeRecord *)malloc(sizeof(NodeRecord));
+    node->id = 0;
+    node->nom = NULL;
+    node->type_noeud = NULL;
+    node->latitude = 0.0;
+    node->longitude = 0.0;
+    node->capacite = 0;
+    node->next = NULL;
+    return node;
+}
+
+// Fonction qui parcourt les tokens pour extraire la liste des nœuds sous la clé "nodes"
+NodeRecord *parse_nodes_list(Token *tokens, int token_count)
+{
+    int i = 0;
+    // Rechercher le token "nodes"
+    while (i < token_count)
+    {
+        if (tokens[i].type == TOKEN_STRING && strcmp(tokens[i].value, "nodes") == 0)
+        {
+            i++;
+            if (i < token_count && tokens[i].type == TOKEN_COLON)
+                i++;
+            if (i < token_count && tokens[i].type == TOKEN_BEGIN_ARRAY)
+            {
+                i++; // Passe '['
+                break;
+            }
+        }
+        else
+        {
+            i++;
+        }
+    }
+
+    NodeRecord *head = NULL;
+    NodeRecord *tail = NULL;
+
+    // Parcourir le tableau d'objets jusqu'au TOKEN_END_ARRAY
+    while (i < token_count && tokens[i].type != TOKEN_END_ARRAY)
+    {
+        if (tokens[i].type == TOKEN_BEGIN_OBJECT)
+        {
+            i++; // Passe '{'
+            NodeRecord *newNode = create_node_record();
+            while (i < token_count && tokens[i].type != TOKEN_END_OBJECT)
+            {
+                if (tokens[i].type == TOKEN_STRING)
+                {
+                    char *field = tokens[i].value;
+                    i++; // Passe la clé
+                    if (i < token_count && tokens[i].type == TOKEN_COLON)
+                        i++; // Passe ':'
+                    if (strcmp(field, "id") == 0)
+                    {
+                        if (i < token_count && tokens[i].type == TOKEN_NUMBER)
+                            newNode->id = atoi(tokens[i].value);
+                        i++;
+                    }
+                    else if (strcmp(field, "nom") == 0)
+                    {
+                        if (i < token_count && tokens[i].type == TOKEN_STRING)
+                            newNode->nom = strdup(tokens[i].value);
+                        i++;
+                    }
+                    else if (strcmp(field, "type_noeud") == 0)
+                    {
+                        if (i < token_count && tokens[i].type == TOKEN_STRING)
+                            newNode->type_noeud = strdup(tokens[i].value);
+                        i++;
+                    }
+                    else if (strcmp(field, "latitude") == 0)
+                    {
+                        if (i < token_count && tokens[i].type == TOKEN_NUMBER)
+                            newNode->latitude = atof(tokens[i].value);
+                        i++;
+                    }
+                    else if (strcmp(field, "longitude") == 0)
+                    {
+                        if (i < token_count && tokens[i].type == TOKEN_NUMBER)
+                            newNode->longitude = atof(tokens[i].value);
+                        i++;
+                    }
+                    else if (strcmp(field, "capacite") == 0)
+                    {
+                        if (i < token_count && tokens[i].type == TOKEN_NUMBER)
+                            newNode->capacite = atoi(tokens[i].value);
+                        i++;
+                    }
+                    else
+                    {
+                        i++; // Ignorer les champs inconnus
+                    }
+                }
+                else
+                {
+                    i++; // Passer virgules ou autres tokens
+                }
+            }
+            if (i < token_count && tokens[i].type == TOKEN_END_OBJECT)
+                i++; // Passe '}'
+            if (head == NULL)
+            {
+                head = newNode;
+                tail = newNode;
+            }
+            else
+            {
+                tail->next = newNode;
+                tail = newNode;
+            }
+            if (i < token_count && tokens[i].type == TOKEN_COMMA)
+                i++; // Passe ','
+        }
+        else
+        {
+            i++;
+        }
+    }
+    if (i < token_count && tokens[i].type == TOKEN_END_ARRAY)
+        i++; // Passe ']'
+    return head;
+}
+
+void print_node_list(NodeRecord *head)
+{
+    while (head != NULL)
+    {
+        printf("ID: %d\n", head->id);
+        printf("Nom: %s\n", head->nom ? head->nom : "NULL");
+        printf("Type: %s\n", head->type_noeud ? head->type_noeud : "NULL");
+        printf("Latitude: %.6f\n", head->latitude);
+        printf("Longitude: %.6f\n", head->longitude);
+        printf("Capacite: %d\n", head->capacite);
+        printf("--------------------------\n");
+        head = head->next;
+    }
+}
+
+void free_node_list(NodeRecord *head)
+{
+    NodeRecord *temp;
+    while (head != NULL)
+    {
+        temp = head;
+        head = head->next;
+        free(temp->nom);
+        free(temp->type_noeud);
+        free(temp);
+    }
+}
+
+///////////////////////
+// Fonction main
+///////////////////////
 int main()
 {
     char input_filename[256];
     char output_filename[256];
 
-    // Demander le nom du fichier d'entrée
-    printf("Entrez le nom du fichier d'entrée (ex: input.json) : ");
+    // Demande du nom du fichier d'entrée
+    printf("Entrez le nom du fichier d'entree (ex: test.json) : ");
     scanf("%255s", input_filename);
 
-    // Lire le fichier JSON d'entrée
+    // Lecture du fichier JSON
     char *json_input = read_file(input_filename);
     if (!json_input)
     {
@@ -289,25 +446,30 @@ int main()
         return 1;
     }
 
-    // Tokeniser le contenu JSON
+    // Tokenisation du contenu JSON
     int token_count = 0;
     Token *tokens = tokenize(json_input, &token_count);
-    free(json_input); // plus besoin du contenu original
+    free(json_input); // Plus besoin du contenu original
 
-    // Demander le nom du fichier de sortie
+    // Extraction des nœuds de la clé "nodes" pour remplir la liste chaînée
+    NodeRecord *nodeList = parse_nodes_list(tokens, token_count);
+
+    // Affichage de la liste des nœuds
+    printf("\n--- Liste des noeuds ---\n");
+    print_node_list(nodeList);
+
+    // Demande du nom du fichier de sortie et écriture des tokens (optionnel)
     printf("Entrez le nom du fichier de sortie (ex: output.json) : ");
     scanf("%255s", output_filename);
-
-    // Écrire le contenu reconstruit dans le fichier de sortie
     write_tokens_to_file(output_filename, tokens, token_count);
-    printf("Le contenu a été lu depuis %s et réécrit dans %s\n", input_filename, output_filename);
+    printf("Le contenu a ete lu depuis %s et reecrit dans %s\n", input_filename, output_filename);
 
-    // Attendre que l'utilisateur appuie sur une touche avant de fermer
     printf("Appuyez sur une touche pour continuer...\n");
     system("pause");
 
-    // Libérer la mémoire des tokens
+    // Libération de la mémoire
     free_tokens(tokens, token_count);
+    free_node_list(nodeList);
 
     return 0;
 }
