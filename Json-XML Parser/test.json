@@ -1,0 +1,21 @@
+{
+
+    "nodes": [
+        {
+            "id": 1,
+            "nom": "Base",
+            "type_noeud": "hub",
+            "latitude": -3.971383,
+            "longitude": 5.339263,
+            "capacite": 0
+        },
+        {  
+            "id": 2,
+            "nom": "Daloa",
+            "type_noeud": "relais",
+            "latitude": -6.449516,
+            "longitude": 6.890926,
+            "capacite": 1
+        }
+]
+}
