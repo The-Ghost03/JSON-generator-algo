@@ -419,8 +419,10 @@ static void free_json(JsonValue *value)
 
 //////////////////////////////
 // PARTIE 2 : PARSING XML (minimal)
-// (Pour cet exemple, nous nous concentrons sur la conversion du JSON, mais le XML serait analogue)
+// Pour cet exemple, nous nous concentrons sur la conversion du JSON en graphe.
+// (La partie XML peut être intégrée de façon analogue.)
 //////////////////////////////
+
 typedef struct
 {
     char *key;
@@ -437,12 +439,13 @@ typedef struct XmlNode
     size_t child_count;
 } XmlNode;
 
-// (Les fonctions de parsing XML – xml_skip_whitespace, xml_parse_tag, etc. – sont identiques à celles présentées précédemment)
-// Pour cet exemple, nous nous concentrerons sur la conversion du JSON vers le graphe.
+// (Les fonctions XML comme xml_skip_whitespace, xml_parse_tag, etc. sont omises ici pour la brièveté.)
+// On se concentre sur la conversion du JSON en graphe pour cet exemple.
 
 //////////////////////////////
 // PARTIE 3 : LECTURE DE FICHIER
 //////////////////////////////
+
 static char *read_file(const char *filename)
 {
     FILE *fp = fopen(filename, "rb");
@@ -467,7 +470,7 @@ static char *read_file(const char *filename)
 }
 
 //////////////////////////////
-// PARTIE 4 : STRUCTURE DE GRAPHE
+// PARTIE 4 : STRUCTURE DE GRAPHE (LogisticsGraph)
 //////////////////////////////
 
 typedef struct EdgeAttr
@@ -552,7 +555,6 @@ static LogisticsGraph *buildGraphFromJson(const JsonValue *root)
             continue;
         int id = i; // Par défaut, utilisation de l'indice
         char *name = strdup("Unnamed");
-        // Lecture des champs du nœud
         JsonValue *idField = get_json_field(nodeObj, "id");
         if (idField && idField->type == JSON_NUMBER)
         {
@@ -564,10 +566,9 @@ static LogisticsGraph *buildGraphFromJson(const JsonValue *root)
             free(name);
             name = strdup(nameField->as.stringValue);
         }
-        // Stockage dans le graphe ; on suppose ici que les id sont consécutifs et 1-indexés
         int index = id - 1;
         if (index < 0 || index >= nodeCount)
-            index = i; // Sinon, utiliser l'indice courant
+            index = i;
         graph->nodeNames[index] = name;
     }
 
@@ -581,7 +582,6 @@ static LogisticsGraph *buildGraphFromJson(const JsonValue *root)
                 continue;
             int src = -1, dest = -1;
             EdgeAttr attr = {0};
-            // Extraction des champs
             JsonValue *srcField = get_json_field(edgeObj, "source_id");
             JsonValue *destField = get_json_field(edgeObj, "destination_id");
             if (srcField && srcField->type == JSON_NUMBER)
@@ -648,10 +648,65 @@ static void DFS(LogisticsGraph *graph, int start)
         fprintf(stderr, "Erreur allocation mémoire pour visited\n");
         return;
     }
+    printf("\n--- Parcours DFS ---\n");
     printf("Début du DFS à partir du nœud %d: %s\n", start + 1, graph->nodeNames[start]);
     DFSUtil(graph, start, visited);
     free(visited);
 }
+
+//////////////////////////////
+// PARTIE 7 : BFS DU GRAPHE
+//////////////////////////////
+
+static void BFS(LogisticsGraph *graph, int start)
+{
+    int *visited = calloc(graph->nodeCount, sizeof(int));
+    if (!visited)
+    {
+        fprintf(stderr, "Erreur d'allocation pour visited\n");
+        return;
+    }
+    // Utilisation d'une file (queue) simple implémentée avec un tableau
+    int *queue = malloc(graph->nodeCount * sizeof(int));
+    if (!queue)
+    {
+        free(visited);
+        fprintf(stderr, "Erreur d'allocation pour la queue\n");
+        return;
+    }
+    int front = 0, rear = 0;
+
+    // Enqueue du nœud de départ
+    queue[rear++] = start;
+    visited[start] = 1;
+
+    printf("\n--- Parcours BFS ---\n");
+    printf("Début du BFS à partir du nœud %d: %s\n", start + 1, graph->nodeNames[start]);
+
+    while (front < rear)
+    {
+        int current = queue[front++];
+        printf("Visite du nœud %d: %s\n", current + 1, graph->nodeNames[current]);
+
+        AdjListNode *adj = graph->adjacencyLists[current];
+        while (adj)
+        {
+            if (!visited[adj->dest])
+            {
+                visited[adj->dest] = 1;
+                queue[rear++] = adj->dest;
+            }
+            adj = adj->next;
+        }
+    }
+
+    free(visited);
+    free(queue);
+}
+
+//////////////////////////////
+// PARTIE 8 : LIBÉRATION DU GRAPHE
+//////////////////////////////
 
 static void freeGraph(LogisticsGraph *graph)
 {
@@ -674,8 +729,9 @@ static void freeGraph(LogisticsGraph *graph)
 }
 
 //////////////////////////////
-// PARTIE 7 : MAIN
+// PARTIE 9 : MAIN
 //////////////////////////////
+
 int main(void)
 {
     char input_filename[256];
@@ -702,7 +758,7 @@ int main(void)
     p = skip_whitespace(p);
 
     // Pour cet exemple, nous nous concentrons sur le format JSON.
-    // (La conversion XML serait analogue, en créant une fonction buildGraphFromXml.)
+    // (La conversion XML serait analogue avec une fonction buildGraphFromXml.)
     if (*p != '{' && *p != '[')
     {
         printf("Format de fichier non reconnu ou non supporté pour la conversion en graphe.\n");
@@ -717,7 +773,7 @@ int main(void)
     printf("\n--- Structure JSON construite ---\n");
     print_json(json_root, 0);
 
-    // Conversion en graphe
+    // Conversion du JSON en graphe
     LogisticsGraph *graph = buildGraphFromJson(json_root);
     if (!graph)
     {
@@ -744,8 +800,10 @@ int main(void)
     }
 
     // Lancement du DFS sur le graphe (à partir du premier nœud)
-    printf("\n--- Parcours DFS ---\n");
     DFS(graph, 0);
+
+    // Lancement du BFS sur le graphe (à partir du premier nœud)
+    BFS(graph, 0);
 
     // Nettoyage
     free_tokens(tokens, token_count);
