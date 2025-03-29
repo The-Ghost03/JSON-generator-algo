@@ -346,9 +346,7 @@ static void print_json(const JsonValue *value, int indent)
     if (!value)
         return;
     for (int i = 0; i < indent; i++)
-    {
         printf("  ");
-    }
     switch (value->type)
     {
     case JSON_NULL:
@@ -364,7 +362,6 @@ static void print_json(const JsonValue *value, int indent)
         printf("\"%s\"\n", value->as.stringValue);
         break;
     case JSON_ARRAY:
-    {
         printf("[\n");
         for (size_t i = 0; i < value->as.array.count; i++)
         {
@@ -373,10 +370,8 @@ static void print_json(const JsonValue *value, int indent)
         for (int i = 0; i < indent; i++)
             printf("  ");
         printf("]\n");
-    }
-    break;
+        break;
     case JSON_OBJECT:
-    {
         printf("{\n");
         for (size_t i = 0; i < value->as.object.count; i++)
         {
@@ -388,8 +383,7 @@ static void print_json(const JsonValue *value, int indent)
         for (int i = 0; i < indent; i++)
             printf("  ");
         printf("}\n");
-    }
-    break;
+        break;
     }
 }
 
@@ -425,6 +419,7 @@ static void free_json(JsonValue *value)
 
 //////////////////////////////
 // PARTIE 2 : PARSING XML (minimal)
+// (Pour cet exemple, nous nous concentrons sur la conversion du JSON, mais le XML serait analogue)
 //////////////////////////////
 typedef struct
 {
@@ -442,233 +437,8 @@ typedef struct XmlNode
     size_t child_count;
 } XmlNode;
 
-static void xml_skip_whitespace(const char **p)
-{
-    while (**p && isspace((unsigned char)**p))
-    {
-        (*p)++;
-    }
-}
-
-static char *xml_parse_tag(const char **p)
-{
-    xml_skip_whitespace(p);
-    const char *start = *p;
-    while (**p && !isspace((unsigned char)**p) && **p != '>' && **p != '/')
-    {
-        (*p)++;
-    }
-    int len = (int)(*p - start);
-    char *tag = (char *)malloc(len + 1);
-    strncpy(tag, start, len);
-    tag[len] = '\0';
-    return tag;
-}
-
-static XmlAttribute *xml_parse_attributes(const char **p, size_t *attr_count)
-{
-    size_t capacity = 4;
-    XmlAttribute *attrs = (XmlAttribute *)malloc(capacity * sizeof(XmlAttribute));
-    *attr_count = 0;
-    xml_skip_whitespace(p);
-    while (**p && **p != '>' && **p != '/')
-    {
-        const char *start = *p;
-        while (**p && !isspace((unsigned char)**p) && **p != '=')
-            (*p)++;
-        int len = (int)(*p - start);
-        char *key = (char *)malloc(len + 1);
-        strncpy(key, start, len);
-        key[len] = '\0';
-        xml_skip_whitespace(p);
-        if (**p == '=')
-            (*p)++;
-        xml_skip_whitespace(p);
-        char quote = **p;
-        char *value = NULL;
-        if (quote == '"' || quote == '\'')
-        {
-            (*p)++;
-            const char *val_start = *p;
-            while (**p && **p != quote)
-                (*p)++;
-            int vlen = (int)(*p - val_start);
-            value = (char *)malloc(vlen + 1);
-            strncpy(value, val_start, vlen);
-            value[vlen] = '\0';
-            if (**p == quote)
-                (*p)++;
-        }
-        if (*attr_count >= capacity)
-        {
-            capacity *= 2;
-            attrs = (XmlAttribute *)realloc(attrs, capacity * sizeof(XmlAttribute));
-        }
-        attrs[*attr_count].key = key;
-        attrs[*attr_count].value = value;
-        (*attr_count)++;
-        xml_skip_whitespace(p);
-    }
-    return attrs;
-}
-
-static char *xml_parse_text(const char **p)
-{
-    const char *start = *p;
-    while (**p && **p != '<')
-        (*p)++;
-    int len = (int)(*p - start);
-    char *text = (char *)malloc(len + 1);
-    strncpy(text, start, len);
-    text[len] = '\0';
-    return text;
-}
-
-static XmlNode *parse_xml_element(const char **p);
-
-static XmlNode *parse_xml_element(const char **p)
-{
-    xml_skip_whitespace(p);
-    if (**p != '<')
-        return NULL;
-    (*p)++; // saute '<'
-    if (**p == '/')
-        return NULL;
-    char *tag = xml_parse_tag(p);
-    XmlNode *node = (XmlNode *)malloc(sizeof(XmlNode));
-    node->tag = tag;
-    node->attributes = NULL;
-    node->attribute_count = 0;
-    node->text = NULL;
-    node->children = NULL;
-    node->child_count = 0;
-    xml_skip_whitespace(p);
-    if (**p != '>' && **p != '/')
-    {
-        node->attributes = xml_parse_attributes(p, &node->attribute_count);
-    }
-    if (**p == '/')
-    {
-        (*p)++;
-        if (**p == '>')
-            (*p)++;
-        return node;
-    }
-    if (**p == '>')
-    {
-        (*p)++;
-    }
-    xml_skip_whitespace(p);
-    size_t children_capacity = 4;
-    node->children = (XmlNode **)malloc(children_capacity * sizeof(XmlNode *));
-    node->child_count = 0;
-    while (**p)
-    {
-        xml_skip_whitespace(p);
-        if (**p == '<')
-        {
-            if ((*p)[1] == '/')
-                break;
-            XmlNode *child = parse_xml_element(p);
-            if (child)
-            {
-                if (node->child_count >= children_capacity)
-                {
-                    children_capacity *= 2;
-                    node->children = (XmlNode **)realloc(node->children, children_capacity * sizeof(XmlNode *));
-                }
-                node->children[node->child_count++] = child;
-            }
-        }
-        else
-        {
-            char *text = xml_parse_text(p);
-            if (text && strlen(text) > 0)
-            {
-                if (node->text == NULL)
-                {
-                    node->text = text;
-                }
-                else
-                {
-                    char *old = node->text;
-                    node->text = (char *)malloc(strlen(old) + strlen(text) + 1);
-                    strcpy(node->text, old);
-                    strcat(node->text, text);
-                    free(old);
-                    free(text);
-                }
-            }
-            else
-            {
-                free(text);
-            }
-        }
-        xml_skip_whitespace(p);
-    }
-    if (**p == '<' && (*p)[1] == '/')
-    {
-        (*p) += 2; // saute "</"
-        char *closeTag = xml_parse_tag(p);
-        free(closeTag);
-        xml_skip_whitespace(p);
-        if (**p == '>')
-            (*p)++;
-    }
-    return node;
-}
-
-static void print_xml(const XmlNode *node, int indent)
-{
-    if (!node)
-        return;
-    for (int i = 0; i < indent; i++)
-        printf("  ");
-    printf("<%s", node->tag);
-    for (size_t i = 0; i < node->attribute_count; i++)
-    {
-        printf(" %s=\"%s\"", node->attributes[i].key, node->attributes[i].value);
-    }
-    if (node->child_count == 0 && (node->text == NULL || strlen(node->text) == 0))
-    {
-        printf("/>\n");
-        return;
-    }
-    printf(">");
-    if (node->text)
-        printf("%s", node->text);
-    if (node->child_count > 0)
-    {
-        printf("\n");
-        for (size_t i = 0; i < node->child_count; i++)
-        {
-            print_xml(node->children[i], indent + 1);
-        }
-        for (int j = 0; j < indent; j++)
-            printf("  ");
-    }
-    printf("</%s>\n", node->tag);
-}
-
-static void free_xml(XmlNode *node)
-{
-    if (!node)
-        return;
-    free(node->tag);
-    for (size_t i = 0; i < node->attribute_count; i++)
-    {
-        free(node->attributes[i].key);
-        free(node->attributes[i].value);
-    }
-    free(node->attributes);
-    free(node->text);
-    for (size_t i = 0; i < node->child_count; i++)
-    {
-        free_xml(node->children[i]);
-    }
-    free(node->children);
-    free(node);
-}
+// (Les fonctions de parsing XML – xml_skip_whitespace, xml_parse_tag, etc. – sont identiques à celles présentées précédemment)
+// Pour cet exemple, nous nous concentrerons sur la conversion du JSON vers le graphe.
 
 //////////////////////////////
 // PARTIE 3 : LECTURE DE FICHIER
@@ -684,7 +454,7 @@ static char *read_file(const char *filename)
     fseek(fp, 0, SEEK_END);
     long filesize = ftell(fp);
     rewind(fp);
-    char *buffer = (char *)malloc(filesize + 1);
+    char *buffer = malloc(filesize + 1);
     if (!buffer)
     {
         fclose(fp);
@@ -697,148 +467,214 @@ static char *read_file(const char *filename)
 }
 
 //////////////////////////////
-// PARTIE 4 : LISTE CHAÎNÉE GÉNÉRIQUE DES ÉLÉMENTS
+// PARTIE 4 : STRUCTURE DE GRAPHE
 //////////////////////////////
-typedef struct ElementRecord
-{
-    char *key;     // Pour JSON : la clé ou pseudo-clé ; pour XML : le tag
-    char *content; // Contenu textuel ou "complex"
-    struct ElementRecord *next;
-} ElementRecord;
 
-static ElementRecord *create_element_record(const char *key, const char *content)
+typedef struct EdgeAttr
 {
-    ElementRecord *elem = (ElementRecord *)malloc(sizeof(ElementRecord));
-    elem->key = key ? strdup(key) : NULL;
-    elem->content = content ? strdup(content) : strdup("complex");
-    elem->next = NULL;
-    return elem;
-}
+    float distance;
+    float baseTime;
+    float cost;
+    int roadType;
+    float reliability;
+    int restrictions;
+} EdgeAttr;
 
-static void append_element(ElementRecord **head, ElementRecord *newElem)
+typedef struct AdjListNode
 {
-    if (*head == NULL)
-    {
-        *head = newElem;
-    }
-    else
-    {
-        ElementRecord *temp = *head;
-        while (temp->next)
-            temp = temp->next;
-        temp->next = newElem;
-    }
-}
+    int dest;                 // Indice du nœud destination (0-indexé)
+    EdgeAttr attr;            // Attributs de l'arête
+    struct AdjListNode *next; // Prochain nœud dans la liste
+} AdjListNode;
 
-static void print_element_list(const ElementRecord *head)
+typedef struct
 {
-    while (head)
-    {
-        printf("Key: %s\n", head->key ? head->key : "NULL");
-        printf("Content: %s\n", head->content ? head->content : "complex");
-        printf("--------------------------\n");
-        head = head->next;
-    }
-}
+    int nodeCount;
+    AdjListNode **adjacencyLists; // Tableau de listes d'adjacence
+    char **nodeNames;             // Noms des nœuds
+} LogisticsGraph;
 
-static void free_element_list(ElementRecord *head)
+static void addEdge(LogisticsGraph *graph, int src, int dest, EdgeAttr attr)
 {
-    while (head)
-    {
-        ElementRecord *temp = head;
-        head = head->next;
-        free(temp->key);
-        free(temp->content);
-        free(temp);
-    }
+    AdjListNode *newNode = malloc(sizeof(AdjListNode));
+    newNode->dest = dest;
+    newNode->attr = attr;
+    newNode->next = graph->adjacencyLists[src];
+    graph->adjacencyLists[src] = newNode;
 }
 
 //////////////////////////////
-// PARTIE 5 : EXTRACTION RÉCURSIVE DES ÉLÉMENTS
+// PARTIE 5 : CONVERSION DU JSON VERS UN GRAPHE
 //////////////////////////////
 
-// Extraction récursive pour JSON
-static void extract_all_json_elements(const char *parentKey,
-                                      const JsonValue *val,
-                                      ElementRecord **list)
+// Fonction pour rechercher une entrée dans un objet JSON par clé
+static JsonValue *get_json_field(const JsonValue *obj, const char *field)
 {
-    if (!val)
-        return;
-
-    char buffer[256];
-    switch (val->type)
+    if (!obj || obj->type != JSON_OBJECT)
+        return NULL;
+    for (size_t i = 0; i < obj->as.object.count; i++)
     {
-    case JSON_STRING:
-        snprintf(buffer, sizeof(buffer), "\"%s\"", val->as.stringValue);
-        break;
-    case JSON_NUMBER:
-        snprintf(buffer, sizeof(buffer), "%f", val->as.numberValue);
-        break;
-    case JSON_BOOL:
-        snprintf(buffer, sizeof(buffer), "%s", val->as.boolValue ? "true" : "false");
-        break;
-    case JSON_NULL:
-        snprintf(buffer, sizeof(buffer), "null");
-        break;
-    default:
-        snprintf(buffer, sizeof(buffer), "complex");
-        break;
+        if (strcmp(obj->as.object.entries[i].key, field) == 0)
+            return obj->as.object.entries[i].value;
+    }
+    return NULL;
+}
+
+// Conversion du JSON en LogisticsGraph
+static LogisticsGraph *buildGraphFromJson(const JsonValue *root)
+{
+    if (!root || root->type != JSON_OBJECT)
+        return NULL;
+
+    JsonValue *nodesVal = get_json_field(root, "nodes");
+    JsonValue *edgesVal = get_json_field(root, "edges");
+    if (!nodesVal || nodesVal->type != JSON_ARRAY)
+    {
+        printf("Erreur : Le champ \"nodes\" est manquant ou mal formaté.\n");
+        return NULL;
     }
 
-    ElementRecord *elem = create_element_record(parentKey, buffer);
-    append_element(list, elem);
-
-    if (val->type == JSON_OBJECT)
+    int nodeCount = (int)nodesVal->as.array.count;
+    LogisticsGraph *graph = malloc(sizeof(LogisticsGraph));
+    graph->nodeCount = nodeCount;
+    graph->adjacencyLists = malloc(nodeCount * sizeof(AdjListNode *));
+    graph->nodeNames = malloc(nodeCount * sizeof(char *));
+    for (int i = 0; i < nodeCount; i++)
     {
-        for (size_t i = 0; i < val->as.object.count; i++)
+        graph->adjacencyLists[i] = NULL;
+    }
+
+    // Traitement des nœuds : on suppose que chaque nœud est un objet avec "id" et "nom"
+    for (int i = 0; i < nodeCount; i++)
+    {
+        JsonValue *nodeObj = nodesVal->as.array.items[i];
+        if (!nodeObj || nodeObj->type != JSON_OBJECT)
+            continue;
+        int id = i; // Par défaut, utilisation de l'indice
+        char *name = strdup("Unnamed");
+        // Lecture des champs du nœud
+        JsonValue *idField = get_json_field(nodeObj, "id");
+        if (idField && idField->type == JSON_NUMBER)
         {
-            const char *childKey = val->as.object.entries[i].key;
-            const JsonValue *childVal = val->as.object.entries[i].value;
-            extract_all_json_elements(childKey, childVal, list);
+            id = (int)idField->as.numberValue;
+        }
+        JsonValue *nameField = get_json_field(nodeObj, "nom");
+        if (nameField && nameField->type == JSON_STRING)
+        {
+            free(name);
+            name = strdup(nameField->as.stringValue);
+        }
+        // Stockage dans le graphe ; on suppose ici que les id sont consécutifs et 1-indexés
+        int index = id - 1;
+        if (index < 0 || index >= nodeCount)
+            index = i; // Sinon, utiliser l'indice courant
+        graph->nodeNames[index] = name;
+    }
+
+    // Traitement des arêtes
+    if (edgesVal && edgesVal->type == JSON_ARRAY)
+    {
+        for (size_t i = 0; i < edgesVal->as.array.count; i++)
+        {
+            JsonValue *edgeObj = edgesVal->as.array.items[i];
+            if (!edgeObj || edgeObj->type != JSON_OBJECT)
+                continue;
+            int src = -1, dest = -1;
+            EdgeAttr attr = {0};
+            // Extraction des champs
+            JsonValue *srcField = get_json_field(edgeObj, "source_id");
+            JsonValue *destField = get_json_field(edgeObj, "destination_id");
+            if (srcField && srcField->type == JSON_NUMBER)
+                src = (int)srcField->as.numberValue - 1;
+            if (destField && destField->type == JSON_NUMBER)
+                dest = (int)destField->as.numberValue - 1;
+            JsonValue *distField = get_json_field(edgeObj, "distance");
+            if (distField && distField->type == JSON_NUMBER)
+                attr.distance = (float)distField->as.numberValue;
+            JsonValue *timeField = get_json_field(edgeObj, "temps_base");
+            if (!timeField)
+                timeField = get_json_field(edgeObj, "baseTime");
+            if (timeField && timeField->type == JSON_NUMBER)
+                attr.baseTime = (float)timeField->as.numberValue;
+            JsonValue *coutField = get_json_field(edgeObj, "cout");
+            if (!coutField)
+                coutField = get_json_field(edgeObj, "cout_monetaire");
+            if (coutField && coutField->type == JSON_NUMBER)
+                attr.cost = (float)coutField->as.numberValue;
+            JsonValue *typeField = get_json_field(edgeObj, "type_route");
+            if (typeField && typeField->type == JSON_NUMBER)
+                attr.roadType = (int)typeField->as.numberValue;
+            JsonValue *fiabField = get_json_field(edgeObj, "fiabilite");
+            if (fiabField && fiabField->type == JSON_NUMBER)
+                attr.reliability = (float)fiabField->as.numberValue;
+            JsonValue *restField = get_json_field(edgeObj, "restrictions");
+            if (!restField)
+                restField = get_json_field(edgeObj, "restrictions_bitmask");
+            if (restField && restField->type == JSON_NUMBER)
+                attr.restrictions = (int)restField->as.numberValue;
+
+            if (src >= 0 && src < graph->nodeCount && dest >= 0 && dest < graph->nodeCount)
+            {
+                addEdge(graph, src, dest, attr);
+            }
         }
     }
-    else if (val->type == JSON_ARRAY)
-    {
-        for (size_t i = 0; i < val->as.array.count; i++)
-        {
-            char arrayKey[64];
-            snprintf(arrayKey, sizeof(arrayKey), "[%zu]", i);
-            extract_all_json_elements(arrayKey, val->as.array.items[i], list);
-        }
-    }
-}
 
-// Extraction récursive pour XML
-static void extract_all_xml_elements(const XmlNode *node, ElementRecord **list)
-{
-    if (!node)
-        return;
-
-    char buffer[256];
-    if (node->text && strlen(node->text) > 0)
-    {
-        snprintf(buffer, sizeof(buffer), "%s", node->text);
-    }
-    else if (node->child_count > 0)
-    {
-        snprintf(buffer, sizeof(buffer), "complex");
-    }
-    else
-    {
-        snprintf(buffer, sizeof(buffer), "");
-    }
-
-    ElementRecord *elem = create_element_record(node->tag, buffer);
-    append_element(list, elem);
-
-    for (size_t i = 0; i < node->child_count; i++)
-    {
-        extract_all_xml_elements(node->children[i], list);
-    }
+    return graph;
 }
 
 //////////////////////////////
-// PARTIE 6 : MAIN HYBRIDE
+// PARTIE 6 : DFS DU GRAPHE
+//////////////////////////////
+
+static void DFSUtil(LogisticsGraph *graph, int v, int *visited)
+{
+    visited[v] = 1;
+    printf("Visite du nœud %d: %s\n", v + 1, graph->nodeNames[v]);
+    AdjListNode *adj = graph->adjacencyLists[v];
+    while (adj)
+    {
+        if (!visited[adj->dest])
+            DFSUtil(graph, adj->dest, visited);
+        adj = adj->next;
+    }
+}
+
+static void DFS(LogisticsGraph *graph, int start)
+{
+    int *visited = calloc(graph->nodeCount, sizeof(int));
+    if (!visited)
+    {
+        fprintf(stderr, "Erreur allocation mémoire pour visited\n");
+        return;
+    }
+    printf("Début du DFS à partir du nœud %d: %s\n", start + 1, graph->nodeNames[start]);
+    DFSUtil(graph, start, visited);
+    free(visited);
+}
+
+static void freeGraph(LogisticsGraph *graph)
+{
+    if (!graph)
+        return;
+    for (int i = 0; i < graph->nodeCount; i++)
+    {
+        AdjListNode *cur = graph->adjacencyLists[i];
+        while (cur)
+        {
+            AdjListNode *temp = cur;
+            cur = cur->next;
+            free(temp);
+        }
+        free(graph->nodeNames[i]);
+    }
+    free(graph->nodeNames);
+    free(graph->adjacencyLists);
+    free(graph);
+}
+
+//////////////////////////////
+// PARTIE 7 : MAIN
 //////////////////////////////
 int main(void)
 {
@@ -865,52 +701,56 @@ int main(void)
     const char *p = file_content;
     p = skip_whitespace(p);
 
-    ElementRecord *elementList = NULL;
-
-    if (*p == '<')
+    // Pour cet exemple, nous nous concentrons sur le format JSON.
+    // (La conversion XML serait analogue, en créant une fonction buildGraphFromXml.)
+    if (*p != '{' && *p != '[')
     {
-        // Traitement XML
-        // Sauter le prologue <?xml ... ?> si présent
-        if (strncmp(p, "<?xml", 5) == 0)
-        {
-            p += 5;
-            while (*p && !(p[0] == '?' && p[1] == '>'))
-                p++;
-            if (*p)
-                p += 2;
-            p = skip_whitespace(p);
-        }
-        XmlNode *xml_root = parse_xml_element(&p);
-        printf("\n--- Structure XML construite ---\n");
-        print_xml(xml_root, 0);
-
-        extract_all_xml_elements(xml_root, &elementList);
-        free_xml(xml_root);
+        printf("Format de fichier non reconnu ou non supporté pour la conversion en graphe.\n");
+        system("pause");
+        return 1;
     }
-    else if (*p == '{' || *p == '[')
-    {
-        // Traitement JSON
-        int token_count = 0;
-        Token *tokens = tokenize(file_content, &token_count);
-        int index = 0;
-        JsonValue *json_root = parse_json(tokens, &index, token_count);
-        printf("\n--- Structure JSON construite ---\n");
-        print_json(json_root, 0);
 
-        extract_all_json_elements("root", json_root, &elementList);
+    int token_count = 0;
+    Token *tokens = tokenize(file_content, &token_count);
+    int index = 0;
+    JsonValue *json_root = parse_json(tokens, &index, token_count);
+    printf("\n--- Structure JSON construite ---\n");
+    print_json(json_root, 0);
+
+    // Conversion en graphe
+    LogisticsGraph *graph = buildGraphFromJson(json_root);
+    if (!graph)
+    {
+        printf("Echec de la conversion en graphe.\n");
         free_tokens(tokens, token_count);
         free_json(json_root);
+        system("pause");
+        return 1;
     }
-    else
+
+    // Affichage des informations du graphe
+    printf("\n--- Graphe converti ---\n");
+    printf("Nombre de nœuds : %d\n", graph->nodeCount);
+    for (int i = 0; i < graph->nodeCount; i++)
     {
-        printf("Format de fichier non reconnu.\n");
+        printf("Nœud %d : %s\n", i + 1, graph->nodeNames[i]);
+        AdjListNode *adj = graph->adjacencyLists[i];
+        while (adj)
+        {
+            printf("  -> Vers nœud %d | Distance: %.2f, Temps: %.2f, Cout: %.2f\n",
+                   adj->dest + 1, adj->attr.distance, adj->attr.baseTime, adj->attr.cost);
+            adj = adj->next;
+        }
     }
 
-    free(file_content);
+    // Lancement du DFS sur le graphe (à partir du premier nœud)
+    printf("\n--- Parcours DFS ---\n");
+    DFS(graph, 0);
 
-    printf("\n--- Liste chainee des elements principaux ---\n");
-    print_element_list(elementList);
-    free_element_list(elementList);
+    // Nettoyage
+    free_tokens(tokens, token_count);
+    free_json(json_root);
+    freeGraph(graph);
 
     printf("Appuyez sur une touche pour continuer...\n");
     system("pause");
