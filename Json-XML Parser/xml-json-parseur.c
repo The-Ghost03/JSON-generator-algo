@@ -3,10 +3,12 @@
 #include <ctype.h>
 #include <string.h>
 
-//////////////////////////////
-// PARTIE 1 : PARSING JSON
-//////////////////////////////
+#define INF 99999999.0
+#define INITIAL_TOKEN_CAPACITY 100
 
+//------------------------------------
+// PARTIE 1 : PARSING JSON
+//------------------------------------
 typedef enum
 {
     TOKEN_BEGIN_OBJECT, // {
@@ -29,25 +31,18 @@ typedef struct
     char *value; // Pour STRING, NUMBER, BOOLEAN ou NULL
 } Token;
 
-#define INITIAL_TOKEN_CAPACITY 100
-
 static Token create_token(TokenType type, const char *value)
 {
     Token t;
     t.type = type;
-    if (value != NULL)
-        t.value = strdup(value);
-    else
-        t.value = NULL;
+    t.value = value ? strdup(value) : NULL;
     return t;
 }
 
 static void free_tokens(Token *tokens, int count)
 {
     for (int i = 0; i < count; i++)
-    {
         free(tokens[i].value);
-    }
     free(tokens);
 }
 
@@ -96,9 +91,8 @@ static Token parse_string(const char **s)
 
 static Token *tokenize(const char *input, int *token_count)
 {
-    int capacity = INITIAL_TOKEN_CAPACITY;
+    int capacity = INITIAL_TOKEN_CAPACITY, count = 0;
     Token *tokens = malloc(sizeof(Token) * capacity);
-    int count = 0;
     const char *p = input;
     while (*p != '\0')
     {
@@ -186,7 +180,6 @@ typedef enum
 } JsonType;
 
 typedef struct JsonValue JsonValue;
-
 typedef struct
 {
     char *key;
@@ -362,6 +355,7 @@ static void print_json(const JsonValue *value, int indent)
         printf("\"%s\"\n", value->as.stringValue);
         break;
     case JSON_ARRAY:
+    {
         printf("[\n");
         for (size_t i = 0; i < value->as.array.count; i++)
         {
@@ -370,8 +364,10 @@ static void print_json(const JsonValue *value, int indent)
         for (int i = 0; i < indent; i++)
             printf("  ");
         printf("]\n");
-        break;
+    }
+    break;
     case JSON_OBJECT:
+    {
         printf("{\n");
         for (size_t i = 0; i < value->as.object.count; i++)
         {
@@ -383,7 +379,8 @@ static void print_json(const JsonValue *value, int indent)
         for (int i = 0; i < indent; i++)
             printf("  ");
         printf("}\n");
-        break;
+    }
+    break;
     }
 }
 
@@ -417,12 +414,9 @@ static void free_json(JsonValue *value)
     free(value);
 }
 
-//////////////////////////////
+//------------------------------------
 // PARTIE 2 : PARSING XML (minimal)
-// Pour cet exemple, nous nous concentrons sur la conversion du JSON en graphe.
-// (La partie XML peut être intégrée de façon analogue.)
-//////////////////////////////
-
+//------------------------------------
 typedef struct
 {
     char *key;
@@ -439,13 +433,241 @@ typedef struct XmlNode
     size_t child_count;
 } XmlNode;
 
-// (Les fonctions XML comme xml_skip_whitespace, xml_parse_tag, etc. sont omises ici pour la brièveté.)
-// On se concentre sur la conversion du JSON en graphe pour cet exemple.
+static void xml_skip_whitespace(const char **p)
+{
+    while (**p && isspace((unsigned char)**p))
+        (*p)++;
+}
 
-//////////////////////////////
+static char *xml_parse_tag(const char **p)
+{
+    xml_skip_whitespace(p);
+    const char *start = *p;
+    while (**p && !isspace((unsigned char)**p) && **p != '>' && **p != '/')
+        (*p)++;
+    int len = (int)(*p - start);
+    char *tag = malloc(len + 1);
+    strncpy(tag, start, len);
+    tag[len] = '\0';
+    return tag;
+}
+
+static char *xml_parse_text(const char **p)
+{
+    const char *start = *p;
+    while (**p && **p != '<')
+        (*p)++;
+    int len = (int)(*p - start);
+    char *text = malloc(len + 1);
+    strncpy(text, start, len);
+    text[len] = '\0';
+    return text;
+}
+
+static XmlAttribute *xml_parse_attributes(const char **p, size_t *attr_count)
+{
+    size_t capacity = 4;
+    XmlAttribute *attrs = malloc(capacity * sizeof(XmlAttribute));
+    *attr_count = 0;
+    xml_skip_whitespace(p);
+    while (**p && **p != '>' && **p != '/')
+    {
+        const char *start = *p;
+        while (**p && !isspace((unsigned char)**p) && **p != '=')
+            (*p)++;
+        int len = (int)(*p - start);
+        char *key = malloc(len + 1);
+        strncpy(key, start, len);
+        key[len] = '\0';
+        xml_skip_whitespace(p);
+        if (**p == '=')
+        {
+            (*p)++;
+            xml_skip_whitespace(p);
+        }
+        char quote = **p;
+        char *value = NULL;
+        if (quote == '"' || quote == '\'')
+        {
+            (*p)++;
+            const char *valStart = *p;
+            while (**p && **p != quote)
+                (*p)++;
+            int vlen = (int)(*p - valStart);
+            value = malloc(vlen + 1);
+            strncpy(value, valStart, vlen);
+            value[vlen] = '\0';
+            if (**p == quote)
+                (*p)++;
+        }
+        if (*attr_count >= capacity)
+        {
+            capacity *= 2;
+            attrs = realloc(attrs, capacity * sizeof(XmlAttribute));
+        }
+        attrs[*attr_count].key = key;
+        attrs[*attr_count].value = value;
+        (*attr_count)++;
+        xml_skip_whitespace(p);
+    }
+    return attrs;
+}
+
+static XmlNode *parse_xml_element(const char **p)
+{
+    xml_skip_whitespace(p);
+    if (**p != '<')
+        return NULL;
+    (*p)++; // saute '<'
+    if (**p == '?')
+    { // prologue <?xml ... ?>
+        while (**p && strncmp(*p, "?>", 2) != 0)
+            (*p)++;
+        if (**p)
+            (*p) += 2;
+        return parse_xml_element(p);
+    }
+    if (**p == '/')
+        return NULL; // balise fermante
+    char *tag = xml_parse_tag(p);
+    XmlNode *node = malloc(sizeof(XmlNode));
+    node->tag = tag;
+    node->attributes = NULL;
+    node->attribute_count = 0;
+    node->text = NULL;
+    node->children = NULL;
+    node->child_count = 0;
+    xml_skip_whitespace(p);
+    if (**p != '>' && **p != '/')
+    {
+        node->attributes = xml_parse_attributes(p, &node->attribute_count);
+    }
+    if (**p == '/')
+    { // balise auto-fermante
+        (*p)++;
+        if (**p == '>')
+            (*p)++;
+        return node;
+    }
+    if (**p == '>')
+    {
+        (*p)++;
+    }
+    // Lecture du contenu jusqu'à la balise fermante
+    size_t children_capacity = 4;
+    node->children = malloc(children_capacity * sizeof(XmlNode *));
+    node->child_count = 0;
+    while (**p)
+    {
+        xml_skip_whitespace(p);
+        if (**p == '<')
+        {
+            if ((*p)[1] == '/')
+                break; // balise fermante
+            XmlNode *child = parse_xml_element(p);
+            if (child)
+            {
+                if (node->child_count >= children_capacity)
+                {
+                    children_capacity *= 2;
+                    node->children = realloc(node->children, children_capacity * sizeof(XmlNode *));
+                }
+                node->children[node->child_count++] = child;
+            }
+        }
+        else
+        {
+            char *text = xml_parse_text(p);
+            if (text && strlen(text) > 0)
+            {
+                if (node->text == NULL)
+                {
+                    node->text = text;
+                }
+                else
+                {
+                    size_t oldLen = strlen(node->text);
+                    size_t newLen = oldLen + strlen(text) + 1;
+                    node->text = realloc(node->text, newLen);
+                    strcat(node->text, text);
+                    free(text);
+                }
+            }
+            else
+            {
+                free(text);
+            }
+        }
+        xml_skip_whitespace(p);
+    }
+    if (**p == '<' && (*p)[1] == '/')
+    {
+        (*p) += 2; // saute "</"
+        char *closeTag = xml_parse_tag(p);
+        free(closeTag);
+        xml_skip_whitespace(p);
+        if (**p == '>')
+            (*p)++;
+    }
+    return node;
+}
+
+static void print_xml(const XmlNode *node, int indent)
+{
+    if (!node)
+        return;
+    for (int i = 0; i < indent; i++)
+        printf("  ");
+    printf("<%s", node->tag);
+    for (size_t i = 0; i < node->attribute_count; i++)
+    {
+        printf(" %s=\"%s\"", node->attributes[i].key, node->attributes[i].value);
+    }
+    if (node->child_count == 0 && (!node->text || strlen(node->text) == 0))
+    {
+        printf("/>\n");
+        return;
+    }
+    printf(">");
+    if (node->text)
+        printf("%s", node->text);
+    if (node->child_count > 0)
+    {
+        printf("\n");
+        for (size_t i = 0; i < node->child_count; i++)
+        {
+            print_xml(node->children[i], indent + 1);
+        }
+        for (int i = 0; i < indent; i++)
+            printf("  ");
+    }
+    printf("</%s>\n", node->tag);
+}
+
+static void free_xml(XmlNode *node)
+{
+    if (!node)
+        return;
+    free(node->tag);
+    for (size_t i = 0; i < node->attribute_count; i++)
+    {
+        free(node->attributes[i].key);
+        free(node->attributes[i].value);
+    }
+    free(node->attributes);
+    if (node->text)
+        free(node->text);
+    for (size_t i = 0; i < node->child_count; i++)
+    {
+        free_xml(node->children[i]);
+    }
+    free(node->children);
+    free(node);
+}
+
+//------------------------------------
 // PARTIE 3 : LECTURE DE FICHIER
-//////////////////////////////
-
+//------------------------------------
 static char *read_file(const char *filename)
 {
     FILE *fp = fopen(filename, "rb");
@@ -469,10 +691,9 @@ static char *read_file(const char *filename)
     return buffer;
 }
 
-//////////////////////////////
+//------------------------------------
 // PARTIE 4 : STRUCTURE DE GRAPHE (LogisticsGraph)
-//////////////////////////////
-
+//------------------------------------
 typedef struct EdgeAttr
 {
     float distance;
@@ -506,11 +727,9 @@ static void addEdge(LogisticsGraph *graph, int src, int dest, EdgeAttr attr)
     graph->adjacencyLists[src] = newNode;
 }
 
-//////////////////////////////
+//------------------------------------
 // PARTIE 5 : CONVERSION DU JSON VERS UN GRAPHE
-//////////////////////////////
-
-// Fonction pour rechercher une entrée dans un objet JSON par clé
+//------------------------------------
 static JsonValue *get_json_field(const JsonValue *obj, const char *field)
 {
     if (!obj || obj->type != JSON_OBJECT)
@@ -523,7 +742,6 @@ static JsonValue *get_json_field(const JsonValue *obj, const char *field)
     return NULL;
 }
 
-// Conversion du JSON en LogisticsGraph
 static LogisticsGraph *buildGraphFromJson(const JsonValue *root)
 {
     if (!root || root->type != JSON_OBJECT)
@@ -553,7 +771,7 @@ static LogisticsGraph *buildGraphFromJson(const JsonValue *root)
         JsonValue *nodeObj = nodesVal->as.array.items[i];
         if (!nodeObj || nodeObj->type != JSON_OBJECT)
             continue;
-        int id = i; // Par défaut, utilisation de l'indice
+        int id = i;
         char *name = strdup("Unnamed");
         JsonValue *idField = get_json_field(nodeObj, "id");
         if (idField && idField->type == JSON_NUMBER)
@@ -623,14 +841,156 @@ static LogisticsGraph *buildGraphFromJson(const JsonValue *root)
     return graph;
 }
 
-//////////////////////////////
-// PARTIE 6 : DFS DU GRAPHE
-//////////////////////////////
+//------------------------------------
+// PARTIE 5bis : CONVERSION DU XML VERS UN GRAPHE
+//------------------------------------
+// On suppose que le fichier XML suit la structure suivante :
+// <reseau>
+//   <nodes>
+//      <node>
+//         <id>1</id>
+//         <nom>Base</nom>
+//         ... autres informations ...
+//      </node>
+//      <node> ... </node>
+//   </nodes>
+//   <edges>
+//      <edge>
+//         <source_id>1</source_id>
+//         <destination_id>2</destination_id>
+//         <distance>375.0</distance>
+//         <temps_base>300.0</temps_base>
+//         <cout>10000.0</cout>
+//         <type_route>0</type_route>
+//         <fiabilite>1.0</fiabilite>
+//         <restrictions>2</restrictions>
+//      </edge>
+//      <edge> ... </edge>
+//   </edges>
+// </reseau>
+static char *get_xml_child_text(const XmlNode *node, const char *childTag)
+{
+    if (!node || !childTag)
+        return NULL;
+    for (size_t i = 0; i < node->child_count; i++)
+    {
+        if (node->children[i]->tag && strcmp(node->children[i]->tag, childTag) == 0)
+        {
+            if (node->children[i]->text)
+                return node->children[i]->text;
+        }
+    }
+    return NULL;
+}
 
+static LogisticsGraph *buildGraphFromXml(const XmlNode *root)
+{
+    if (!root)
+        return NULL;
+    XmlNode *nodesNode = NULL, *edgesNode = NULL;
+    for (size_t i = 0; i < root->child_count; i++)
+    {
+        if (root->children[i]->tag)
+        {
+            if (strcmp(root->children[i]->tag, "nodes") == 0)
+                nodesNode = root->children[i];
+            else if (strcmp(root->children[i]->tag, "edges") == 0)
+                edgesNode = root->children[i];
+        }
+    }
+    if (!nodesNode)
+    {
+        printf("Erreur : Pas de noeud <nodes> dans le fichier XML.\n");
+        return NULL;
+    }
+    int nodeCount = (int)nodesNode->child_count;
+    LogisticsGraph *graph = malloc(sizeof(LogisticsGraph));
+    graph->nodeCount = nodeCount;
+    graph->adjacencyLists = malloc(nodeCount * sizeof(AdjListNode *));
+    graph->nodeNames = malloc(nodeCount * sizeof(char *));
+    for (int i = 0; i < nodeCount; i++)
+    {
+        graph->adjacencyLists[i] = NULL;
+        graph->nodeNames[i] = strdup("Unnamed");
+    }
+    // Traitement des noeuds : on suppose que chaque noeud est un <node>
+    for (int i = 0; i < nodeCount; i++)
+    {
+        XmlNode *nodeObj = nodesNode->children[i];
+        if (!nodeObj || strcmp(nodeObj->tag, "node") != 0)
+            continue;
+        int id = i;
+        char *name = strdup("Unnamed");
+        char *idText = get_xml_child_text(nodeObj, "id");
+        if (idText)
+            id = atoi(idText);
+        char *nameText = get_xml_child_text(nodeObj, "nom");
+        if (nameText)
+        {
+            free(name);
+            name = strdup(nameText);
+        }
+        int index = id - 1;
+        if (index < 0 || index >= nodeCount)
+            index = i;
+        graph->nodeNames[index] = name;
+    }
+    // Traitement des arêtes
+    if (edgesNode)
+    {
+        for (size_t i = 0; i < edgesNode->child_count; i++)
+        {
+            XmlNode *edgeObj = edgesNode->children[i];
+            if (!edgeObj || strcmp(edgeObj->tag, "edge") != 0)
+                continue;
+            int src = -1, dest = -1;
+            EdgeAttr attr = {0};
+            char *srcText = get_xml_child_text(edgeObj, "source_id");
+            char *destText = get_xml_child_text(edgeObj, "destination_id");
+            if (srcText)
+                src = atoi(srcText) - 1;
+            if (destText)
+                dest = atoi(destText) - 1;
+            char *distText = get_xml_child_text(edgeObj, "distance");
+            if (distText)
+                attr.distance = atof(distText);
+            char *timeText = get_xml_child_text(edgeObj, "temps_base");
+            if (!timeText)
+                timeText = get_xml_child_text(edgeObj, "baseTime");
+            if (timeText)
+                attr.baseTime = atof(timeText);
+            char *coutText = get_xml_child_text(edgeObj, "cout");
+            if (!coutText)
+                coutText = get_xml_child_text(edgeObj, "cout_monetaire");
+            if (coutText)
+                attr.cost = atof(coutText);
+            char *typeText = get_xml_child_text(edgeObj, "type_route");
+            if (typeText)
+                attr.roadType = atoi(typeText);
+            char *fiabText = get_xml_child_text(edgeObj, "fiabilite");
+            if (fiabText)
+                attr.reliability = atof(fiabText);
+            char *restText = get_xml_child_text(edgeObj, "restrictions");
+            if (!restText)
+                restText = get_xml_child_text(edgeObj, "restrictions_bitmask");
+            if (restText)
+                attr.restrictions = atoi(restText);
+            if (src >= 0 && src < graph->nodeCount && dest >= 0 && dest < graph->nodeCount)
+            {
+                addEdge(graph, src, dest, attr);
+            }
+        }
+    }
+    return graph;
+}
+
+//------------------------------------
+// PARTIE 6 : DFS DU GRAPHE
+//------------------------------------
 static void DFSUtil(LogisticsGraph *graph, int v, int *visited)
 {
     visited[v] = 1;
-    printf("Visite du nœud %d: %s\n", v + 1, graph->nodeNames[v]);
+    printf("Visite DFS du nœud %d: %s\n", v + 1, graph->nodeNames[v]);
     AdjListNode *adj = graph->adjacencyLists[v];
     while (adj)
     {
@@ -645,49 +1005,42 @@ static void DFS(LogisticsGraph *graph, int start)
     int *visited = calloc(graph->nodeCount, sizeof(int));
     if (!visited)
     {
-        fprintf(stderr, "Erreur allocation mémoire pour visited\n");
+        fprintf(stderr, "Erreur d'allocation pour visited (DFS)\n");
         return;
     }
     printf("\n--- Parcours DFS ---\n");
-    printf("Début du DFS à partir du nœud %d: %s\n", start + 1, graph->nodeNames[start]);
     DFSUtil(graph, start, visited);
     free(visited);
 }
 
-//////////////////////////////
+//------------------------------------
 // PARTIE 7 : BFS DU GRAPHE
-//////////////////////////////
-
+//------------------------------------
 static void BFS(LogisticsGraph *graph, int start)
 {
     int *visited = calloc(graph->nodeCount, sizeof(int));
     if (!visited)
     {
-        fprintf(stderr, "Erreur d'allocation pour visited\n");
+        fprintf(stderr, "Erreur d'allocation pour visited (BFS)\n");
         return;
     }
-    // Utilisation d'une file (queue) simple implémentée avec un tableau
     int *queue = malloc(graph->nodeCount * sizeof(int));
     if (!queue)
     {
         free(visited);
-        fprintf(stderr, "Erreur d'allocation pour la queue\n");
+        fprintf(stderr, "Erreur d'allocation pour la file (BFS)\n");
         return;
     }
     int front = 0, rear = 0;
 
-    // Enqueue du nœud de départ
     queue[rear++] = start;
     visited[start] = 1;
 
     printf("\n--- Parcours BFS ---\n");
-    printf("Début du BFS à partir du nœud %d: %s\n", start + 1, graph->nodeNames[start]);
-
     while (front < rear)
     {
         int current = queue[front++];
-        printf("Visite du nœud %d: %s\n", current + 1, graph->nodeNames[current]);
-
+        printf("Visite BFS du nœud %d: %s\n", current + 1, graph->nodeNames[current]);
         AdjListNode *adj = graph->adjacencyLists[current];
         while (adj)
         {
@@ -704,10 +1057,78 @@ static void BFS(LogisticsGraph *graph, int start)
     free(queue);
 }
 
-//////////////////////////////
-// PARTIE 8 : LIBÉRATION DU GRAPHE
-//////////////////////////////
+//------------------------------------
+// PARTIE 8 : CONVERSION DU GRAPHE EN MATRICE DE DISTANCES
+//------------------------------------
+static double **createDistanceMatrix(const LogisticsGraph *graph)
+{
+    int n = graph->nodeCount;
+    double **matrix = malloc(n * sizeof(double *));
+    for (int i = 0; i < n; i++)
+    {
+        matrix[i] = malloc(n * sizeof(double));
+        for (int j = 0; j < n; j++)
+        {
+            matrix[i][j] = (i == j) ? 0.0 : INF;
+        }
+        AdjListNode *edge = graph->adjacencyLists[i];
+        while (edge)
+        {
+            int j = edge->dest;
+            double cost = edge->attr.baseTime; // Utilisation de baseTime comme coût
+            if (cost < matrix[i][j])
+                matrix[i][j] = cost;
+            edge = edge->next;
+        }
+    }
+    return matrix;
+}
 
+//------------------------------------
+// PARTIE 9 : FLOYD WARSHALL
+//------------------------------------
+static void floydWarshall(int n, double **matrix)
+{
+    for (int k = 0; k < n; k++)
+    {
+        for (int i = 0; i < n; i++)
+        {
+            for (int j = 0; j < n; j++)
+            {
+                double newDist = matrix[i][k] + matrix[k][j];
+                if (newDist < matrix[i][j])
+                    matrix[i][j] = newDist;
+            }
+        }
+    }
+}
+
+static void printDistanceMatrix(int n, double **matrix)
+{
+    printf("\n--- Matrice des plus courts chemins (coût = baseTime) ---\n");
+    for (int i = 0; i < n; i++)
+    {
+        for (int j = 0; j < n; j++)
+        {
+            if (matrix[i][j] >= INF)
+                printf("%7s ", "INF");
+            else
+                printf("%7.2f ", matrix[i][j]);
+        }
+        printf("\n");
+    }
+}
+
+static void freeDistanceMatrix(int n, double **matrix)
+{
+    for (int i = 0; i < n; i++)
+        free(matrix[i]);
+    free(matrix);
+}
+
+//------------------------------------
+// PARTIE 10 : LIBÉRATION DU GRAPHE
+//------------------------------------
 static void freeGraph(LogisticsGraph *graph)
 {
     if (!graph)
@@ -728,10 +1149,9 @@ static void freeGraph(LogisticsGraph *graph)
     free(graph);
 }
 
-//////////////////////////////
-// PARTIE 9 : MAIN
-//////////////////////////////
-
+//------------------------------------
+// PARTIE 11 : MAIN
+//------------------------------------
 int main(void)
 {
     char input_filename[256];
@@ -746,7 +1166,7 @@ int main(void)
         return 1;
     }
 
-    // Gestion du BOM UTF-8
+    // Gestion du BOM UTF-8 pour JSON
     if ((unsigned char)file_content[0] == 0xEF &&
         (unsigned char)file_content[1] == 0xBB &&
         (unsigned char)file_content[2] == 0xBF)
@@ -757,34 +1177,45 @@ int main(void)
     const char *p = file_content;
     p = skip_whitespace(p);
 
-    // Pour cet exemple, nous nous concentrons sur le format JSON.
-    // (La conversion XML serait analogue avec une fonction buildGraphFromXml.)
-    if (*p != '{' && *p != '[')
+    LogisticsGraph *graph = NULL;
+
+    // Détection du format : JSON si { ou [, XML si <
+    if (*p == '{' || *p == '[')
+    {
+        int token_count = 0;
+        Token *tokens = tokenize(file_content, &token_count);
+        int index = 0;
+        JsonValue *json_root = parse_json(tokens, &index, token_count);
+        printf("\n--- Structure JSON construite ---\n");
+        print_json(json_root, 0);
+        graph = buildGraphFromJson(json_root);
+        free_tokens(tokens, token_count);
+        free_json(json_root);
+    }
+    else if (*p == '<')
+    {
+        // Traitement XML
+        XmlNode *xml_root = parse_xml_element(&p);
+        printf("\n--- Structure XML construite ---\n");
+        print_xml(xml_root, 0);
+        graph = buildGraphFromXml(xml_root);
+        free_xml(xml_root);
+    }
+    else
     {
         printf("Format de fichier non reconnu ou non supporté pour la conversion en graphe.\n");
         system("pause");
         return 1;
     }
 
-    int token_count = 0;
-    Token *tokens = tokenize(file_content, &token_count);
-    int index = 0;
-    JsonValue *json_root = parse_json(tokens, &index, token_count);
-    printf("\n--- Structure JSON construite ---\n");
-    print_json(json_root, 0);
-
-    // Conversion du JSON en graphe
-    LogisticsGraph *graph = buildGraphFromJson(json_root);
     if (!graph)
     {
         printf("Echec de la conversion en graphe.\n");
-        free_tokens(tokens, token_count);
-        free_json(json_root);
         system("pause");
         return 1;
     }
 
-    // Affichage des informations du graphe
+    // Affichage du graphe
     printf("\n--- Graphe converti ---\n");
     printf("Nombre de nœuds : %d\n", graph->nodeCount);
     for (int i = 0; i < graph->nodeCount; i++)
@@ -799,15 +1230,17 @@ int main(void)
         }
     }
 
-    // Lancement du DFS sur le graphe (à partir du premier nœud)
+    // Parcours DFS et BFS
     DFS(graph, 0);
-
-    // Lancement du BFS sur le graphe (à partir du premier nœud)
     BFS(graph, 0);
 
+    // Conversion en matrice de distances et application de Floyd Warshall
+    double **distanceMatrix = createDistanceMatrix(graph);
+    floydWarshall(graph->nodeCount, distanceMatrix);
+    printDistanceMatrix(graph->nodeCount, distanceMatrix);
+    freeDistanceMatrix(graph->nodeCount, distanceMatrix);
+
     // Nettoyage
-    free_tokens(tokens, token_count);
-    free_json(json_root);
     freeGraph(graph);
 
     printf("Appuyez sur une touche pour continuer...\n");
