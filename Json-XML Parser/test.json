@@ -2,48 +2,42 @@
   "nodes": [
     {
       "id": 1,
-      "nom": "Base",
-      "type_noeud": "hub",
-      "latitude": -3.971383,
-      "longitude": 5.339263,
-      "capacite": 0
+      "nom": "Hub Abidjan",
+      "congestion_morning": 1.0,
+      "congestion_afternoon": 1.2,
+      "congestion_night": 1.1
     },
     {
       "id": 2,
-      "nom": "Daloa",
-      "type_noeud": "relais",
-      "latitude": -6.449516,
-      "longitude": 6.890926,
-      "capacite": 1
+      "nom": "Relais Yamoussoukro",
+      "congestion_morning": 1.0,
+      "congestion_afternoon": 1.1,
+      "congestion_night": 1.0
     },
     {
       "id": 3,
-      "nom": "Divo",
-      "type_noeud": "relais",
-      "latitude": 5.025445,
-      "longitude": 0.36515,
-      "capacite": 3000
+      "nom": "Noeud 3",
+      "congestion_morning": 1.2,
+      "congestion_afternoon": 1.5,
+      "congestion_night": 1.3
     },
     {
       "id": 4,
-      "nom": "Bonoua",
-      "type_noeud": "relais",
-      "latitude": -2.01254,
-      "longitude": 0.449516,
-      "capacite": 8900
+      "nom": "Noeud 4",
+      "congestion_morning": 1.1,
+      "congestion_afternoon": 1.4,
+      "congestion_night": 1.2
     },
     {
       "id": 5,
-      "nom": "Tiassal\u00e9",
-      "type_noeud": "relais",
-      "latitude": 6.15416,
-      "longitude": 3.1648465,
-      "capacite": 1000
+      "nom": "Noeud 5",
+      "congestion_morning": 1.0,
+      "congestion_afternoon": 1.3,
+      "congestion_night": 1.0
     }
   ],
   "edges": [
     {
-      "id": 1,
       "source_id": 1,
       "destination_id": 2,
       "distance": 375.0,
@@ -52,12 +46,9 @@
       "type_route": 0,
       "fiabilite": 1.0,
       "restrictions": 2,
-      "variation_temps_matin": 1.0,
-      "variation_temps_apresmidi": 1.0,
-      "variation_temps_nuit": 1.0
+      "weatherType": 0
     },
     {
-      "id": 2,
       "source_id": 1,
       "destination_id": 5,
       "distance": 168.0,
@@ -66,12 +57,9 @@
       "type_route": 0,
       "fiabilite": 1.0,
       "restrictions": 4,
-      "variation_temps_matin": 1.0,
-      "variation_temps_apresmidi": 1.0,
-      "variation_temps_nuit": 1.0
+      "weatherType": 1
     },
     {
-      "id": 3,
       "source_id": 5,
       "destination_id": 3,
       "distance": 360.0,
@@ -80,12 +68,9 @@
       "type_route": 0,
       "fiabilite": 0.5,
       "restrictions": 4,
-      "variation_temps_matin": 1.0,
-      "variation_temps_apresmidi": 1.0,
-      "variation_temps_nuit": 1.0
+      "weatherType": 2
     },
     {
-      "id": 4,
       "source_id": 1,
       "destination_id": 4,
       "distance": 140.0,
@@ -94,29 +79,7 @@
       "type_route": 0,
       "fiabilite": 1.0,
       "restrictions": 3,
-      "variation_temps_matin": 1.0,
-      "variation_temps_apresmidi": 1.0,
-      "variation_temps_nuit": 1.0
-    }
-  ],
-  "vehicles": [
-    {
-      "id": 1,
-      "type_vehicule": "camion",
-      "capacite": 100,
-      "disponibilite_debut": "12:00:00",
-      "disponibilite_fin": "18:00:00",
-      "cout_par_km": 500.0
-    }
-  ],
-  "deliveries": [
-    {
-      "id": 1,
-      "origine_id": 1,
-      "destination_id": 2,
-      "volume": 12,
-      "priorite": "express",
-      "echeance": "06:00:00"
+      "weatherType": 0
     }
   ]
 }
