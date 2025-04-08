@@ -4,7 +4,9 @@
 
 #include "graph.h"
 
-/* Types et structures pour le parsing JSON */
+/* ===============================
+   SECTION JSON
+   =============================== */
 typedef enum
 {
     JSON_NULL,
@@ -43,13 +45,41 @@ struct JsonValue
     } as;
 };
 
-/* Prototypes pour le parseur JSON */
 JsonValue *parse_json_file(const char *fileContent);
 void print_json(const JsonValue *value, int indent);
 void free_json(JsonValue *value);
 
-/* Prototypes pour la conversion en graphe */
 Graph *buildGraphFromJson(const JsonValue *root);
-Graph *buildGraphFromXml(const void *xmlRoot); // Note : Adapter selon votre parseur XML
+
+/* ===============================
+   SECTION XML
+   =============================== */
+typedef struct XmlAttribute
+{
+    char *key;
+    char *value;
+} XmlAttribute;
+
+typedef struct XmlNode
+{
+    char *tag;
+    XmlAttribute *attributes;
+    size_t attribute_count;
+    char *text;
+    struct XmlNode **children;
+    size_t child_count;
+} XmlNode;
+
+XmlNode *parse_xml_element(const char **p);
+void print_xml(const XmlNode *node, int indent);
+void free_xml(XmlNode *node);
+
+Graph *buildGraphFromXml(const void *xmlRoot);
+
+/* ===============================
+   FONCTIONS UTILITAIRES COMMUNES
+   =============================== */
+char *read_file(const char *filename);
+const char *skip_whitespace(const char *s);
 
 #endif /* PARSER_H */

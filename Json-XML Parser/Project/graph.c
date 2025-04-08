@@ -48,7 +48,7 @@ void addEdgeToGraph(Graph *graph, int src, int dest, EdgeAttr attr)
 {
     if (src < 0 || src >= graph->V || dest < 0 || dest >= graph->V)
     {
-        fprintf(stderr, "Indices de node invalides dans addEdgeToGraph.\n");
+        fprintf(stderr, "Indices de nœud invalides dans addEdgeToGraph.\n");
         return;
     }
     AdjListNode *newNode = malloc(sizeof(AdjListNode));
@@ -145,11 +145,11 @@ void freeGraph(Graph *graph)
         return;
     for (int i = 0; i < graph->V; i++)
     {
-        AdjListNode *curr = graph->array[i].head;
-        while (curr)
+        AdjListNode *cur = graph->array[i].head;
+        while (cur)
         {
-            AdjListNode *temp = curr;
-            curr = curr->next;
+            AdjListNode *temp = cur;
+            cur = cur->next;
             free(temp);
         }
         if (graph->nodes[i].name)

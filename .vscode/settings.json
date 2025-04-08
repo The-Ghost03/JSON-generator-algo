@@ -2,5 +2,14 @@
     "docwriter.style": "Auto-detect",
     "docwriter.progress.trackMethods": false,
     "docwriter.progress.trackFunctions": true,
-    "docwriter.progress.trackTypes": true
+    "docwriter.progress.trackTypes": true,
+    "files.associations": {
+        "*.sqlbook": "sql",
+        "*.ndjson": "jsonl",
+        "*.dbclient-js": "javascript",
+        "parser.h": "c",
+        "stdlib.h": "c",
+        "graph.h": "c",
+        "graph_applications.h": "c"
+    }
 }

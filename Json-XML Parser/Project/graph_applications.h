@@ -4,17 +4,17 @@
 
 #include "graph.h"
 
-/* Détecte les cycles dans le graphe */
+/* Détecte les cycles dans le graphe (graphe non orienté) */
 int detectCycle(Graph *graph);
 
-/* Vérifie si le nœud target est accessible depuis le nœud start */
+/* Vérifie si le nœud target est accessible à partir du nœud start */
 int isReachable(Graph *graph, int start, int target);
 
-/* Identifie les composantes connexes.
-   Le tableau 'components' doit être alloué par l'appelant et contiendra l'indice de composante pour chaque nœud. */
+/* Remplit le tableau components (alloué par l'appelant) avec l'indice de composante de chaque nœud.
+   Retourne le nombre de composantes connexes. */
 int findConnectedComponents(Graph *graph, int *components);
 
-/* Détecte les points d'articulation et place 1 dans artPoints[i] si le nœud i en est un. */
+/* Détecte et marque les points d'articulation (nœuds critiques) dans le tableau artPoints */
 void findArticulationPoints(Graph *graph, int *artPoints);
 
 /* Calcule et affiche des statistiques sur la connectivité du graphe */

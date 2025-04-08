@@ -4,7 +4,7 @@
 #include "graph.h"
 #include "graph_applications.h"
 
-/* --- Détection de cycle dans un graphe (pour graphe non orienté) --- */
+/* --- Détection de cycle (graphe non orienté) --- */
 static int DFSUtilDetectCycle(Graph *graph, int v, int parent, int *visited)
 {
     visited[v] = 1;
@@ -121,7 +121,7 @@ int findConnectedComponents(Graph *graph, int *components)
     return compIndex;
 }
 
-/* --- Détection des points d'articulation (Algorithme de Tarjan) --- */
+/* --- Points d'articulation (Tarjan simplifié) --- */
 static int timeGlobal;
 static void articulationDFS(Graph *graph, int u, int *visited, int *disc, int *low, int *parent, int *ap)
 {
