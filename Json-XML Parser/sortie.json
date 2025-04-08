@@ -1,1 +1,531 @@
-{"nodes":[{"id":1,"nom":"Base","type_noeud":"hub","latitude":-3.971383,"longitude":5.339263,"capacite":0},{"id":2,"nom":"Daloa","type_noeud":"relais","latitude":-6.449516,"longitude":6.890926,"capacite":1}]}
+{
+  "nodes": [
+    {
+      "id": 1,
+      "nom": "Hub Abidjan",
+      "type": "hub",
+      "coordinates": [5.35, -4.02],
+      "capacity": 1000,
+      "congestion_morning": 1.2,
+      "congestion_afternoon": 1.1,
+      "congestion_night": 1.0
+    },
+    {
+      "id": 2,
+      "nom": "Hub Yamoussoukro",
+      "type": "hub",
+      "coordinates": [6.83, -5.28],
+      "capacity": 1000,
+      "congestion_morning": 1.2,
+      "congestion_afternoon": 1.1,
+      "congestion_night": 1.0
+    },
+    {
+      "id": 3,
+      "nom": "Hub Bouaké",
+      "type": "hub",
+      "coordinates": [7.37, -3.95],
+      "capacity": 1000,
+      "congestion_morning": 1.2,
+      "congestion_afternoon": 1.1,
+      "congestion_night": 1.0
+    },
+    {
+      "id": 4,
+      "nom": "Hub San Pedro",
+      "type": "hub",
+      "coordinates": [4.78, -6.05],
+      "capacity": 1000,
+      "congestion_morning": 1.2,
+      "congestion_afternoon": 1.1,
+      "congestion_night": 1.0
+    },
+    {
+      "id": 5,
+      "nom": "Hub Daloa",
+      "type": "hub",
+      "coordinates": [5.62, -4.43],
+      "capacity": 1000,
+      "congestion_morning": 1.2,
+      "congestion_afternoon": 1.1,
+      "congestion_night": 1.0
+    },
+    {
+      "id": 6,
+      "nom": "Relais 6",
+      "type": "relay",
+      "coordinates": [5.10, -4.00],
+      "capacity": 500,
+      "congestion_morning": 1.0,
+      "congestion_afternoon": 1.0,
+      "congestion_night": 1.0
+    },
+    {
+      "id": 7,
+      "nom": "Relais 7",
+      "type": "relay",
+      "coordinates": [5.10, -3.90],
+      "capacity": 500,
+      "congestion_morning": 1.0,
+      "congestion_afternoon": 1.0,
+      "congestion_night": 1.0
+    },
+    {
+      "id": 8,
+      "nom": "Relais 8",
+      "type": "relay",
+      "coordinates": [5.10, -3.80],
+      "capacity": 500,
+      "congestion_morning": 1.0,
+      "congestion_afternoon": 1.0,
+      "congestion_night": 1.0
+    },
+    {
+      "id": 9,
+      "nom": "Relais 9",
+      "type": "relay",
+      "coordinates": [5.10, -3.70],
+      "capacity": 500,
+      "congestion_morning": 1.0,
+      "congestion_afternoon": 1.0,
+      "congestion_night": 1.0
+    },
+    {
+      "id": 10,
+      "nom": "Relais 10",
+      "type": "relay",
+      "coordinates": [5.10, -3.60],
+      "capacity": 500,
+      "congestion_morning": 1.0,
+      "congestion_afternoon": 1.0,
+      "congestion_night": 1.0
+    },
+    {
+      "id": 11,
+      "nom": "Relais 11",
+      "type": "relay",
+      "coordinates": [5.20, -4.00],
+      "capacity": 500,
+      "congestion_morning": 1.0,
+      "congestion_afternoon": 1.0,
+      "congestion_night": 1.0
+    },
+    {
+      "id": 12,
+      "nom": "Relais 12",
+      "type": "relay",
+      "coordinates": [5.20, -3.90],
+      "capacity": 500,
+      "congestion_morning": 1.0,
+      "congestion_afternoon": 1.0,
+      "congestion_night": 1.0
+    },
+    {
+      "id": 13,
+      "nom": "Relais 13",
+      "type": "relay",
+      "coordinates": [5.20, -3.80],
+      "capacity": 500,
+      "congestion_morning": 1.0,
+      "congestion_afternoon": 1.0,
+      "congestion_night": 1.0
+    },
+    {
+      "id": 14,
+      "nom": "Relais 14",
+      "type": "relay",
+      "coordinates": [5.20, -3.70],
+      "capacity": 500,
+      "congestion_morning": 1.0,
+      "congestion_afternoon": 1.0,
+      "congestion_night": 1.0
+    },
+    {
+      "id": 15,
+      "nom": "Relais 15",
+      "type": "relay",
+      "coordinates": [5.20, -3.60],
+      "capacity": 500,
+      "congestion_morning": 1.0,
+      "congestion_afternoon": 1.0,
+      "congestion_night": 1.0
+    },
+    {
+      "id": 16,
+      "nom": "Livraison 16",
+      "type": "delivery",
+      "coordinates": [5.30, -4.00],
+      "capacity": 100,
+      "congestion_morning": 1.0,
+      "congestion_afternoon": 1.0,
+      "congestion_night": 1.0
+    },
+    {
+      "id": 17,
+      "nom": "Livraison 17",
+      "type": "delivery",
+      "coordinates": [5.30, -3.90],
+      "capacity": 100,
+      "congestion_morning": 1.0,
+      "congestion_afternoon": 1.0,
+      "congestion_night": 1.0
+    },
+    {
+      "id": 18,
+      "nom": "Livraison 18",
+      "type": "delivery",
+      "coordinates": [5.30, -3.80],
+      "capacity": 100,
+      "congestion_morning": 1.0,
+      "congestion_afternoon": 1.0,
+      "congestion_night": 1.0
+    },
+    {
+      "id": 19,
+      "nom": "Livraison 19",
+      "type": "delivery",
+      "coordinates": [5.30, -3.70],
+      "capacity": 100,
+      "congestion_morning": 1.0,
+      "congestion_afternoon": 1.0,
+      "congestion_night": 1.0
+    },
+    {
+      "id": 20,
+      "nom": "Livraison 20",
+      "type": "delivery",
+      "coordinates": [5.30, -3.60],
+      "capacity": 100,
+      "congestion_morning": 1.0,
+      "congestion_afternoon": 1.0,
+      "congestion_night": 1.0
+    },
+    {
+      "id": 21,
+      "nom": "Livraison 21",
+      "type": "delivery",
+      "coordinates": [5.40, -4.00],
+      "capacity": 100,
+      "congestion_morning": 1.0,
+      "congestion_afternoon": 1.0,
+      "congestion_night": 1.0
+    },
+    {
+      "id": 22,
+      "nom": "Livraison 22",
+      "type": "delivery",
+      "coordinates": [5.40, -3.90],
+      "capacity": 100,
+      "congestion_morning": 1.0,
+      "congestion_afternoon": 1.0,
+      "congestion_night": 1.0
+    },
+    {
+      "id": 23,
+      "nom": "Livraison 23",
+      "type": "delivery",
+      "coordinates": [5.40, -3.80],
+      "capacity": 100,
+      "congestion_morning": 1.0,
+      "congestion_afternoon": 1.0,
+      "congestion_night": 1.0
+    },
+    {
+      "id": 24,
+      "nom": "Livraison 24",
+      "type": "delivery",
+      "coordinates": [5.40, -3.70],
+      "capacity": 100,
+      "congestion_morning": 1.0,
+      "congestion_afternoon": 1.0,
+      "congestion_night": 1.0
+    },
+    {
+      "id": 25,
+      "nom": "Livraison 25",
+      "type": "delivery",
+      "coordinates": [5.40, -3.60],
+      "capacity": 100,
+      "congestion_morning": 1.0,
+      "congestion_afternoon": 1.0,
+      "congestion_night": 1.0
+    },
+    {
+      "id": 26,
+      "nom": "Livraison 26",
+      "type": "delivery",
+      "coordinates": [5.50, -4.00],
+      "capacity": 100,
+      "congestion_morning": 1.0,
+      "congestion_afternoon": 1.0,
+      "congestion_night": 1.0
+    },
+    {
+      "id": 27,
+      "nom": "Livraison 27",
+      "type": "delivery",
+      "coordinates": [5.50, -3.90],
+      "capacity": 100,
+      "congestion_morning": 1.0,
+      "congestion_afternoon": 1.0,
+      "congestion_night": 1.0
+    },
+    {
+      "id": 28,
+      "nom": "Livraison 28",
+      "type": "delivery",
+      "coordinates": [5.50, -3.80],
+      "capacity": 100,
+      "congestion_morning": 1.0,
+      "congestion_afternoon": 1.0,
+      "congestion_night": 1.0
+    },
+    {
+      "id": 29,
+      "nom": "Livraison 29",
+      "type": "delivery",
+      "coordinates": [5.50, -3.70],
+      "capacity": 100,
+      "congestion_morning": 1.0,
+      "congestion_afternoon": 1.0,
+      "congestion_night": 1.0
+    },
+    {
+      "id": 30,
+      "nom": "Livraison 30",
+      "type": "delivery",
+      "coordinates": [5.50, -3.60],
+      "capacity": 100,
+      "congestion_morning": 1.0,
+      "congestion_afternoon": 1.0,
+      "congestion_night": 1.0
+    },
+    {
+      "id": 31,
+      "nom": "Livraison 31",
+      "type": "delivery",
+      "coordinates": [5.60, -4.00],
+      "capacity": 100,
+      "congestion_morning": 1.0,
+      "congestion_afternoon": 1.0,
+      "congestion_night": 1.0
+    },
+    {
+      "id": 32,
+      "nom": "Livraison 32",
+      "type": "delivery",
+      "coordinates": [5.60, -3.90],
+      "capacity": 100,
+      "congestion_morning": 1.0,
+      "congestion_afternoon": 1.0,
+      "congestion_night": 1.0
+    },
+    {
+      "id": 33,
+      "nom": "Livraison 33",
+      "type": "delivery",
+      "coordinates": [5.60, -3.80],
+      "capacity": 100,
+      "congestion_morning": 1.0,
+      "congestion_afternoon": 1.0,
+      "congestion_night": 1.0
+    },
+    {
+      "id": 34,
+      "nom": "Livraison 34",
+      "type": "delivery",
+      "coordinates": [5.60, -3.70],
+      "capacity": 100,
+      "congestion_morning": 1.0,
+      "congestion_afternoon": 1.0,
+      "congestion_night": 1.0
+    },
+    {
+      "id": 35,
+      "nom": "Livraison 35",
+      "type": "delivery",
+      "coordinates": [5.60, -3.60],
+      "capacity": 100,
+      "congestion_morning": 1.0,
+      "congestion_afternoon": 1.0,
+      "congestion_night": 1.0
+    },
+    {
+      "id": 36,
+      "nom": "Livraison 36",
+      "type": "delivery",
+      "coordinates": [5.70, -4.00],
+      "capacity": 100,
+      "congestion_morning": 1.0,
+      "congestion_afternoon": 1.0,
+      "congestion_night": 1.0
+    },
+    {
+      "id": 37,
+      "nom": "Livraison 37",
+      "type": "delivery",
+      "coordinates": [5.70, -3.90],
+      "capacity": 100,
+      "congestion_morning": 1.0,
+      "congestion_afternoon": 1.0,
+      "congestion_night": 1.0
+    },
+    {
+      "id": 38,
+      "nom": "Livraison 38",
+      "type": "delivery",
+      "coordinates": [5.70, -3.80],
+      "capacity": 100,
+      "congestion_morning": 1.0,
+      "congestion_afternoon": 1.0,
+      "congestion_night": 1.0
+    },
+    {
+      "id": 39,
+      "nom": "Livraison 39",
+      "type": "delivery",
+      "coordinates": [5.70, -3.70],
+      "capacity": 100,
+      "congestion_morning": 1.0,
+      "congestion_afternoon": 1.0,
+      "congestion_night": 1.0
+    },
+    {
+      "id": 40,
+      "nom": "Livraison 40",
+      "type": "delivery",
+      "coordinates": [5.70, -3.60],
+      "capacity": 100,
+      "congestion_morning": 1.0,
+      "congestion_afternoon": 1.0,
+      "congestion_night": 1.0
+    },
+    {
+      "id": 41,
+      "nom": "Livraison 41",
+      "type": "delivery",
+      "coordinates": [5.80, -4.00],
+      "capacity": 100,
+      "congestion_morning": 1.0,
+      "congestion_afternoon": 1.0,
+      "congestion_night": 1.0
+    },
+    {
+      "id": 42,
+      "nom": "Livraison 42",
+      "type": "delivery",
+      "coordinates": [5.80, -3.90],
+      "capacity": 100,
+      "congestion_morning": 1.0,
+      "congestion_afternoon": 1.0,
+      "congestion_night": 1.0
+    },
+    {
+      "id": 43,
+      "nom": "Livraison 43",
+      "type": "delivery",
+      "coordinates": [5.80, -3.80],
+      "capacity": 100,
+      "congestion_morning": 1.0,
+      "congestion_afternoon": 1.0,
+      "congestion_night": 1.0
+    },
+    {
+      "id": 44,
+      "nom": "Livraison 44",
+      "type": "delivery",
+      "coordinates": [5.80, -3.70],
+      "capacity": 100,
+      "congestion_morning": 1.0,
+      "congestion_afternoon": 1.0,
+      "congestion_night": 1.0
+    },
+    {
+      "id": 45,
+      "nom": "Livraison 45",
+      "type": "delivery",
+      "coordinates": [5.80, -3.60],
+      "capacity": 100,
+      "congestion_morning": 1.0,
+      "congestion_afternoon": 1.0,
+      "congestion_night": 1.0
+    },
+    {
+      "id": 46,
+      "nom": "Livraison 46",
+      "type": "delivery",
+      "coordinates": [5.90, -4.00],
+      "capacity": 100,
+      "congestion_morning": 1.0,
+      "congestion_afternoon": 1.0,
+      "congestion_night": 1.0
+    },
+    {
+      "id": 47,
+      "nom": "Livraison 47",
+      "type": "delivery",
+      "coordinates": [5.90, -3.90],
+      "capacity": 100,
+      "congestion_morning": 1.0,
+      "congestion_afternoon": 1.0,
+      "congestion_night": 1.0
+    },
+    {
+      "id": 48,
+      "nom": "Livraison 48",
+      "type": "delivery",
+      "coordinates": [5.90, -3.80],
+      "capacity": 100,
+      "congestion_morning": 1.0,
+      "congestion_afternoon": 1.0,
+      "congestion_night": 1.0
+    },
+    {
+      "id": 49,
+      "nom": "Livraison 49",
+      "type": "delivery",
+      "coordinates": [5.90, -3.70],
+      "capacity": 100,
+      "congestion_morning": 1.0,
+      "congestion_afternoon": 1.0,
+      "congestion_night": 1.0
+    },
+    {
+      "id": 50,
+      "nom": "Livraison 50",
+      "type": "delivery",
+      "coordinates": [5.90, -3.60],
+      "capacity": 100,
+      "congestion_morning": 1.0,
+      "congestion_afternoon": 1.0,
+      "congestion_night": 1.0
+    }
+  ],
+  "edges": [
+    { "source_id": 1, "destination_id": 2, "distance": 15.0, "baseTime": 20, "cout": 5000, "type_route": 0, "fiabilite": 0.95, "restrictions": 1, "weatherType": 0 },
+    { "source_id": 2, "destination_id": 3, "distance": 18.0, "baseTime": 22, "cout": 5200, "type_route": 0, "fiabilite": 0.96, "restrictions": 1, "weatherType": 0 },
+    { "source_id": 3, "destination_id": 1, "distance": 20.0, "baseTime": 25, "cout": 5400, "type_route": 1, "fiabilite": 0.94, "restrictions": 2, "weatherType": 1 },
+    
+    { "source_id": 4, "destination_id": 5, "distance": 12.0, "baseTime": 18, "cout": 4800, "type_route": 0, "fiabilite": 0.97, "restrictions": 1, "weatherType": 0 },
+    { "source_id": 5, "destination_id": 6, "distance": 14.0, "baseTime": 19, "cout": 5000, "type_route": 1, "fiabilite": 0.95, "restrictions": 2, "weatherType": 1 },
+    { "source_id": 6, "destination_id": 4, "distance": 16.0, "baseTime": 21, "cout": 5100, "type_route": 0, "fiabilite": 0.93, "restrictions": 1, "weatherType": 0 },
+    
+    { "source_id": 10, "destination_id": 15, "distance": 10.0, "baseTime": 14, "cout": 4600, "type_route": 0, "fiabilite": 0.96, "restrictions": 1, "weatherType": 0 },
+    { "source_id": 15, "destination_id": 20, "distance": 11.0, "baseTime": 15, "cout": 4700, "type_route": 1, "fiabilite": 0.95, "restrictions": 2, "weatherType": 1 },
+    { "source_id": 20, "destination_id": 10, "distance": 12.0, "baseTime": 16, "cout": 4800, "type_route": 0, "fiabilite": 0.94, "restrictions": 1, "weatherType": 0 },
+    
+    { "source_id": 7, "destination_id": 12, "distance": 13.0, "baseTime": 17, "cout": 4900, "type_route": 1, "fiabilite": 0.95, "restrictions": 1, "weatherType": 1 },
+    { "source_id": 12, "destination_id": 17, "distance": 14.0, "baseTime": 18, "cout": 5000, "type_route": 0, "fiabilite": 0.96, "restrictions": 1, "weatherType": 0 },
+    { "source_id": 17, "destination_id": 7, "distance": 15.0, "baseTime": 20, "cout": 5100, "type_route": 1, "fiabilite": 0.94, "restrictions": 2, "weatherType": 1 },
+    
+    { "source_id": 25, "destination_id": 30, "distance": 17.0, "baseTime": 21, "cout": 5200, "type_route": 0, "fiabilite": 0.93, "restrictions": 1, "weatherType": 0 },
+    { "source_id": 30, "destination_id": 35, "distance": 18.0, "baseTime": 22, "cout": 5300, "type_route": 1, "fiabilite": 0.95, "restrictions": 1, "weatherType": 1 },
+    { "source_id": 35, "destination_id": 25, "distance": 16.0, "baseTime": 20, "cout": 5200, "type_route": 0, "fiabilite": 0.92, "restrictions": 2, "weatherType": 1 },
+    
+    { "source_id": 40, "destination_id": 45, "distance": 20.0, "baseTime": 24, "cout": 5400, "type_route": 1, "fiabilite": 0.91, "restrictions": 1, "weatherType": 0 },
+    { "source_id": 45, "destination_id": 50, "distance": 22.0, "baseTime": 26, "cout": 5500, "type_route": 0, "fiabilite": 0.90, "restrictions": 2, "weatherType": 1 },
+    { "source_id": 50, "destination_id": 40, "distance": 21.0, "baseTime": 25, "cout": 5400, "type_route": 1, "fiabilite": 0.92, "restrictions": 1, "weatherType": 0 },
+    
+    { "source_id": 5, "destination_id": 10, "distance": 14.0, "baseTime": 18, "cout": 4800, "type_route": 0, "fiabilite": 0.95, "restrictions": 1, "weatherType": 1 }
+  ]
+}

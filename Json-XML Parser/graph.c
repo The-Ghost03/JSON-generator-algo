@@ -184,7 +184,9 @@ static Token *tokenize(const char *input, int *token_count)
     return tokens;
 }
 
-// Structures JSON génériques
+/**********************************
+ * STRUCTURES JSON GÉNÉRIQUES
+ **********************************/
 typedef enum
 {
     JSON_NULL,
@@ -553,11 +555,9 @@ static XmlNode *parse_xml_element(const char **p)
     node->child_count = 0;
     xml_skip_whitespace(p);
     if (**p != '>' && **p != '/')
-    {
         node->attributes = xml_parse_attributes(p, &node->attribute_count);
-    }
     if (**p == '/')
-    { // balise auto-fermante
+    {
         (*p)++;
         if (**p == '>')
             (*p)++;
@@ -705,11 +705,16 @@ static char *read_file(const char *filename)
 }
 
 /**********************************
- * STRUCTURES DU GRAPHE
+ * STRUCTURES DU GRAPHE (NOUVELLES STRUCTURES)
  **********************************/
 typedef struct
 {
-    char *name;
+    int id;               // Identifiant unique du nœud
+    char *name;           // Nom du nœud (ex: "Hub Abidjan")
+    char *type;           // Type de nœud ("hub", "relay", "delivery", etc.)
+    float coordinates[2]; // Coordonnées [latitude, longitude]
+    int capacity;         // Capacité du nœud
+    // Facteurs de congestion pour moduler le temps de parcours
     float congestion_morning;
     float congestion_afternoon;
     float congestion_night;
@@ -717,13 +722,13 @@ typedef struct
 
 typedef struct
 {
-    float distance;
-    float baseTime;
-    float cost;
-    int roadType;
-    float reliability;
-    int restrictions;
-    int weatherType; // 0 = RAS, 1 = Pluie, 2 = Vent
+    float distance;    // Distance en km
+    float baseTime;    // Temps de parcours de base en minutes
+    float cost;        // Coût de l'arête
+    int roadType;      // Type de route (ex: 0: asphalte, 1: latérite, etc.)
+    float reliability; // Fiabilité (0..1)
+    int restrictions;  // Restrictions (par exemple en bits)
+    int weatherType;   // Type de météo (0 = normal, 1 = pluie, 2 = vent, ...)
 } EdgeAttr;
 
 typedef struct AdjListNode
@@ -748,7 +753,6 @@ typedef struct
 /**********************************
  * FONCTIONS DE MANIPULATION DU GRAPHE
  **********************************/
-// Creation d'un graphe avec V noeuds
 Graph *createGraph(int V)
 {
     Graph *graph = malloc(sizeof(Graph));
@@ -764,9 +768,15 @@ Graph *createGraph(int V)
         fprintf(stderr, "Erreur d'allocation pour nodes.\n");
         exit(EXIT_FAILURE);
     }
+    // Initialisation des nœuds avec valeurs par défaut
     for (int i = 0; i < V; i++)
     {
+        graph->nodes[i].id = i + 1;
         graph->nodes[i].name = NULL;
+        graph->nodes[i].type = strdup("undefined");
+        graph->nodes[i].coordinates[0] = 0.0f;
+        graph->nodes[i].coordinates[1] = 0.0f;
+        graph->nodes[i].capacity = 0;
         graph->nodes[i].congestion_morning = 1.0f;
         graph->nodes[i].congestion_afternoon = 1.0f;
         graph->nodes[i].congestion_night = 1.0f;
@@ -784,12 +794,11 @@ Graph *createGraph(int V)
     return graph;
 }
 
-// Ajout d'une arete de src vers dest dans le graphe
 void addEdgeToGraph(Graph *graph, int src, int dest, EdgeAttr attr)
 {
     if (src < 0 || src >= graph->V || dest < 0 || dest >= graph->V)
     {
-        fprintf(stderr, "Indices de noeud invalides dans addEdgeToGraph.\n");
+        fprintf(stderr, "Indices de nœud invalides dans addEdgeToGraph.\n");
         return;
     }
     AdjListNode *newNode = malloc(sizeof(AdjListNode));
@@ -804,7 +813,6 @@ void addEdgeToGraph(Graph *graph, int src, int dest, EdgeAttr attr)
     graph->array[src].head = newNode;
 }
 
-// Suppression d'une arete de src vers dest
 void removeEdgeFromGraph(Graph *graph, int src, int dest)
 {
     if (src < 0 || src >= graph->V)
@@ -827,7 +835,6 @@ void removeEdgeFromGraph(Graph *graph, int src, int dest)
     }
 }
 
-// Ajout d'un nouveau noeud au graphe (extension dynamique)
 void addNode(Graph **graphPtr, const char *name, float cong_morning, float cong_afternoon, float cong_night)
 {
     Graph *graph = *graphPtr;
@@ -835,33 +842,36 @@ void addNode(Graph **graphPtr, const char *name, float cong_morning, float cong_
     Node *newNodes = realloc(graph->nodes, newV * sizeof(Node));
     if (!newNodes)
     {
-        fprintf(stderr, "Erreur de reallocation pour nodes.\n");
+        fprintf(stderr, "Erreur de réallocation pour nodes.\n");
         return;
     }
     graph->nodes = newNodes;
     AdjList *newAdj = realloc(graph->array, newV * sizeof(AdjList));
     if (!newAdj)
     {
-        fprintf(stderr, "Erreur de reallocation pour listes d'adjacence.\n");
+        fprintf(stderr, "Erreur de réallocation pour listes d'adjacence.\n");
         return;
     }
     graph->array = newAdj;
-    // Initialisation du nouveau noeud
+    // Initialisation du nouveau nœud
+    graph->nodes[newV - 1].id = newV;
     graph->nodes[newV - 1].name = strdup(name);
+    graph->nodes[newV - 1].type = strdup("undefined");
+    graph->nodes[newV - 1].coordinates[0] = 0.0f;
+    graph->nodes[newV - 1].coordinates[1] = 0.0f;
+    graph->nodes[newV - 1].capacity = 0;
     graph->nodes[newV - 1].congestion_morning = cong_morning;
     graph->nodes[newV - 1].congestion_afternoon = cong_afternoon;
     graph->nodes[newV - 1].congestion_night = cong_night;
-    // Initialisation de la nouvelle liste d'adjacence
     graph->array[newV - 1].head = NULL;
     graph->V = newV;
 }
 
-// Suppression d'un noeud (supprime ses aretes sortantes et les aretes entrantes dans les autres noeuds)
 void removeNode(Graph *graph, int node)
 {
     if (node < 0 || node >= graph->V)
         return;
-    // Liberer la liste d'adjacence du noeud
+    // Libérer la liste d'adjacence du nœud
     AdjListNode *curr = graph->array[node].head;
     while (curr)
     {
@@ -870,15 +880,15 @@ void removeNode(Graph *graph, int node)
         free(temp);
     }
     graph->array[node].head = NULL;
-    // Supprimer les aretes entrantes dans les autres noeuds
+    // Supprimer les arêtes entrantes dans les autres nœuds
     for (int i = 0; i < graph->V; i++)
     {
         if (i == node)
             continue;
         removeEdgeFromGraph(graph, i, node);
     }
-    // Liberer le nom du noeud et marquer comme supprime
     free(graph->nodes[node].name);
+    free(graph->nodes[node].type);
     graph->nodes[node].name = NULL;
 }
 
@@ -910,20 +920,52 @@ Graph *buildGraphFromJson(const JsonValue *root)
     }
     int nodeCount = (int)nodesVal->as.array.count;
     Graph *graph = createGraph(nodeCount);
-    // Traitement des noeuds
+    // Traitement des nœuds
     for (int i = 0; i < nodeCount; i++)
     {
         JsonValue *nodeObj = nodesVal->as.array.items[i];
         if (!nodeObj || nodeObj->type != JSON_OBJECT)
             continue;
+        // Extraction du champ id
+        int id = i + 1;
+        JsonValue *idField = get_json_field(nodeObj, "id");
+        if (idField && idField->type == JSON_NUMBER)
+            id = (int)idField->as.numberValue;
+        // Extraction du nom
         char *name = strdup("Unnamed");
-        float cong_morning = 1.0f, cong_afternoon = 1.0f, cong_night = 1.0f;
         JsonValue *nameField = get_json_field(nodeObj, "nom");
         if (nameField && nameField->type == JSON_STRING)
         {
             free(name);
             name = strdup(nameField->as.stringValue);
         }
+        // Extraction du type
+        char *type = strdup("undefined");
+        JsonValue *typeField = get_json_field(nodeObj, "type");
+        if (typeField && typeField->type == JSON_STRING)
+        {
+            free(type);
+            type = strdup(typeField->as.stringValue);
+        }
+        // Extraction de la capacité
+        int capacity = 0;
+        JsonValue *capField = get_json_field(nodeObj, "capacity");
+        if (capField && capField->type == JSON_NUMBER)
+            capacity = (int)capField->as.numberValue;
+        // Extraction des coordonnées (attendu comme array avec au moins 2 nombres)
+        float coord[2] = {0.0f, 0.0f};
+        JsonValue *coordField = get_json_field(nodeObj, "coordinates");
+        if (coordField && coordField->type == JSON_ARRAY && coordField->as.array.count >= 2)
+        {
+            JsonValue *latField = coordField->as.array.items[0];
+            JsonValue *lonField = coordField->as.array.items[1];
+            if (latField && latField->type == JSON_NUMBER)
+                coord[0] = (float)latField->as.numberValue;
+            if (lonField && lonField->type == JSON_NUMBER)
+                coord[1] = (float)lonField->as.numberValue;
+        }
+        // Extraction des indices de congestion
+        float cong_morning = 1.0f, cong_afternoon = 1.0f, cong_night = 1.0f;
         JsonValue *morningField = get_json_field(nodeObj, "congestion_morning");
         if (morningField && morningField->type == JSON_NUMBER)
             cong_morning = (float)morningField->as.numberValue;
@@ -933,19 +975,22 @@ Graph *buildGraphFromJson(const JsonValue *root)
         JsonValue *nightField = get_json_field(nodeObj, "congestion_night");
         if (nightField && nightField->type == JSON_NUMBER)
             cong_night = (float)nightField->as.numberValue;
-        int id = i;
-        JsonValue *idField = get_json_field(nodeObj, "id");
-        if (idField && idField->type == JSON_NUMBER)
-            id = (int)idField->as.numberValue;
+        // Utilisation de l'indice basé sur id si cohérent
         int index = id - 1;
         if (index < 0 || index >= nodeCount)
             index = i;
+        // Affectation dans le graphe
+        graph->nodes[index].id = id;
         graph->nodes[index].name = name;
+        graph->nodes[index].type = type;
+        graph->nodes[index].capacity = capacity;
+        graph->nodes[index].coordinates[0] = coord[0];
+        graph->nodes[index].coordinates[1] = coord[1];
         graph->nodes[index].congestion_morning = cong_morning;
         graph->nodes[index].congestion_afternoon = cong_afternoon;
         graph->nodes[index].congestion_night = cong_night;
     }
-    // Traitement des aretes
+    // Traitement des arêtes
     if (edgesVal && edgesVal->type == JSON_ARRAY)
     {
         for (size_t i = 0; i < edgesVal->as.array.count; i++)
@@ -974,9 +1019,9 @@ Graph *buildGraphFromJson(const JsonValue *root)
                 costField = get_json_field(edgeObj, "cout_monetaire");
             if (costField && costField->type == JSON_NUMBER)
                 attr.cost = (float)costField->as.numberValue;
-            JsonValue *typeField = get_json_field(edgeObj, "type_route");
-            if (typeField && typeField->type == JSON_NUMBER)
-                attr.roadType = (int)typeField->as.numberValue;
+            JsonValue *typeFieldEdge = get_json_field(edgeObj, "type_route");
+            if (typeFieldEdge && typeFieldEdge->type == JSON_NUMBER)
+                attr.roadType = (int)typeFieldEdge->as.numberValue;
             JsonValue *fiabField = get_json_field(edgeObj, "fiabilite");
             if (fiabField && fiabField->type == JSON_NUMBER)
                 attr.reliability = (float)fiabField->as.numberValue;
@@ -989,6 +1034,7 @@ Graph *buildGraphFromJson(const JsonValue *root)
             JsonValue *weatherField = get_json_field(edgeObj, "weatherType");
             if (weatherField && weatherField->type == JSON_NUMBER)
                 attr.weatherType = (int)weatherField->as.numberValue;
+
             if (src >= 0 && src < graph->V && dest >= 0 && dest < graph->V)
             {
                 addEdgeToGraph(graph, src, dest, attr);
@@ -1038,13 +1084,13 @@ Graph *buildGraphFromXml(const XmlNode *root)
     }
     int nodeCount = (int)nodesNode->child_count;
     Graph *graph = createGraph(nodeCount);
-    // Traitement des noeuds
+    // Traitement des nœuds
     for (int i = 0; i < nodeCount; i++)
     {
         XmlNode *nodeObj = nodesNode->children[i];
         if (!nodeObj || strcmp(nodeObj->tag, "node") != 0)
             continue;
-        int id = i;
+        int id = i + 1;
         char *name = strdup("Unnamed");
         char *idText = get_xml_child_text(nodeObj, "id");
         if (idText)
@@ -1055,6 +1101,17 @@ Graph *buildGraphFromXml(const XmlNode *root)
             free(name);
             name = strdup(nameText);
         }
+        char *type = strdup("undefined");
+        char *typeText = get_xml_child_text(nodeObj, "type");
+        if (typeText)
+        {
+            free(type);
+            type = strdup(typeText);
+        }
+        int capacity = 0;
+        char *capText = get_xml_child_text(nodeObj, "capacity");
+        if (capText)
+            capacity = atoi(capText);
         float cong_morning = 1.0f, cong_afternoon = 1.0f, cong_night = 1.0f;
         char *morningText = get_xml_child_text(nodeObj, "congestion_morning");
         if (morningText)
@@ -1065,15 +1122,27 @@ Graph *buildGraphFromXml(const XmlNode *root)
         char *nightText = get_xml_child_text(nodeObj, "congestion_night");
         if (nightText)
             cong_night = atof(nightText);
+        float coord[2] = {0.0f, 0.0f};
+        char *latText = get_xml_child_text(nodeObj, "latitude");
+        char *lonText = get_xml_child_text(nodeObj, "longitude");
+        if (latText)
+            coord[0] = atof(latText);
+        if (lonText)
+            coord[1] = atof(lonText);
         int index = id - 1;
         if (index < 0 || index >= nodeCount)
             index = i;
+        graph->nodes[index].id = id;
         graph->nodes[index].name = name;
+        graph->nodes[index].type = type;
+        graph->nodes[index].capacity = capacity;
+        graph->nodes[index].coordinates[0] = coord[0];
+        graph->nodes[index].coordinates[1] = coord[1];
         graph->nodes[index].congestion_morning = cong_morning;
         graph->nodes[index].congestion_afternoon = cong_afternoon;
         graph->nodes[index].congestion_night = cong_night;
     }
-    // Traitement des aretes
+    // Traitement des arêtes
     if (edgesNode)
     {
         for (size_t i = 0; i < edgesNode->child_count; i++)
@@ -1102,9 +1171,9 @@ Graph *buildGraphFromXml(const XmlNode *root)
                 costText = get_xml_child_text(edgeObj, "cout_monetaire");
             if (costText)
                 attr.cost = atof(costText);
-            char *typeText = get_xml_child_text(edgeObj, "type_route");
-            if (typeText)
-                attr.roadType = atoi(typeText);
+            char *typeTextEdge = get_xml_child_text(edgeObj, "type_route");
+            if (typeTextEdge)
+                attr.roadType = atoi(typeTextEdge);
             char *fiabText = get_xml_child_text(edgeObj, "fiabilite");
             if (fiabText)
                 attr.reliability = atof(fiabText);
@@ -1118,9 +1187,7 @@ Graph *buildGraphFromXml(const XmlNode *root)
             if (weatherText)
                 attr.weatherType = atoi(weatherText);
             if (src >= 0 && src < graph->V && dest >= 0 && dest < graph->V)
-            {
                 addEdgeToGraph(graph, src, dest, attr);
-            }
         }
     }
     return graph;
@@ -1132,7 +1199,7 @@ Graph *buildGraphFromXml(const XmlNode *root)
 static void DFSUtil(Graph *graph, int v, int *visited)
 {
     visited[v] = 1;
-    printf("DFS visite noeud %d: %s\n", v + 1, graph->nodes[v].name);
+    printf("DFS visite nœud %d: %s\n", v + 1, graph->nodes[v].name);
     AdjListNode *adj = graph->array[v].head;
     while (adj)
     {
@@ -1177,7 +1244,7 @@ static void BFS(Graph *graph, int start)
     while (front < rear)
     {
         int current = queue[front++];
-        printf("BFS visite noeud %d: %s\n", current + 1, graph->nodes[current].name);
+        printf("BFS visite nœud %d: %s\n", current + 1, graph->nodes[current].name);
         AdjListNode *adj = graph->array[current].head;
         while (adj)
         {
@@ -1211,7 +1278,8 @@ static double **createDistanceMatrix(const Graph *graph)
         while (edge)
         {
             int j = edge->dest;
-            double cost = edge->attr.baseTime; // utilisation de baseTime comme cout
+            // Pour un temps effectif, appliquer ici congestion et météo si besoin
+            double cost = edge->attr.baseTime;
             if (cost < matrix[i][j])
                 matrix[i][j] = cost;
             edge = edge->next;
@@ -1238,7 +1306,7 @@ static void floydWarshall(int n, double **matrix)
 
 static void printDistanceMatrix(int n, double **matrix)
 {
-    printf("\n--- Matrice des plus courts chemins (cout = baseTime) ---\n");
+    printf("\n--- Matrice des plus courts chemins (coût = baseTime) ---\n");
     for (int i = 0; i < n; i++)
     {
         for (int j = 0; j < n; j++)
@@ -1260,88 +1328,7 @@ static void freeDistanceMatrix(int n, double **matrix)
 }
 
 /**********************************
- * FONCTIONS DE MANIPULATION POST-CREATION
- **********************************/
-// Suppression d'une arete de src vers dest
-void removeEdgeFromGraph(Graph *graph, int src, int dest)
-{
-    if (src < 0 || src >= graph->V)
-        return;
-    AdjListNode *curr = graph->array[src].head;
-    AdjListNode *prev = NULL;
-    while (curr)
-    {
-        if (curr->dest == dest)
-        {
-            if (prev == NULL)
-                graph->array[src].head = curr->next;
-            else
-                prev->next = curr->next;
-            free(curr);
-            return;
-        }
-        prev = curr;
-        curr = curr->next;
-    }
-}
-
-// Ajout d'un noeud (extension dynamique du graphe)
-void addNode(Graph **graphPtr, const char *name, float cong_morning, float cong_afternoon, float cong_night)
-{
-    Graph *graph = *graphPtr;
-    int newV = graph->V + 1;
-    Node *newNodes = realloc(graph->nodes, newV * sizeof(Node));
-    if (!newNodes)
-    {
-        fprintf(stderr, "Erreur de reallocation pour nodes.\n");
-        return;
-    }
-    graph->nodes = newNodes;
-    AdjList *newAdj = realloc(graph->array, newV * sizeof(AdjList));
-    if (!newAdj)
-    {
-        fprintf(stderr, "Erreur de reallocation pour listes d'adjacence.\n");
-        return;
-    }
-    graph->array = newAdj;
-    // Initialisation du nouveau noeud
-    graph->nodes[newV - 1].name = strdup(name);
-    graph->nodes[newV - 1].congestion_morning = cong_morning;
-    graph->nodes[newV - 1].congestion_afternoon = cong_afternoon;
-    graph->nodes[newV - 1].congestion_night = cong_night;
-    graph->array[newV - 1].head = NULL;
-    graph->V = newV;
-}
-
-// Suppression d'un noeud (supprime ses aretes sortantes et supprime les aretes entrantes dans les autres noeuds)
-void removeNode(Graph *graph, int node)
-{
-    if (node < 0 || node >= graph->V)
-        return;
-    // Liberation de la liste d'adjacence du noeud
-    AdjListNode *curr = graph->array[node].head;
-    while (curr)
-    {
-        AdjListNode *temp = curr;
-        curr = curr->next;
-        free(temp);
-    }
-    graph->array[node].head = NULL;
-    // Suppression des aretes entrantes dans les autres noeuds
-    for (int i = 0; i < graph->V; i++)
-    {
-        if (i == node)
-            continue;
-        removeEdgeFromGraph(graph, i, node);
-    }
-    free(graph->nodes[node].name);
-    graph->nodes[node].name = NULL;
-}
-
-/**********************************
- * MAIN : Fonctionnement du moule
- * Le fichier JSON ou XML fournit les donnees pour remplir le graphe,
- * puis on peut utiliser les fonctions de manipulation.
+ * MAIN : Fonctionnement du module
  **********************************/
 int main(void)
 {
@@ -1367,7 +1354,7 @@ int main(void)
     p = skip_whitespace(p);
 
     Graph *graph = NULL;
-    // Detection du format
+    // Détection du format d'entrée
     if (*p == '{' || *p == '[')
     {
         int token_count = 0;
@@ -1390,74 +1377,89 @@ int main(void)
     }
     else
     {
-        printf("Format de fichier non reconnu ou non supporte pour la conversion en graphe.\n");
+        printf("Format de fichier non reconnu ou non supporté pour la conversion en graphe.\n");
         system("pause");
         return 1;
     }
 
     if (!graph)
     {
-        printf("Echec de la conversion en graphe.\n");
+        printf("Échec de la conversion en graphe.\n");
         system("pause");
         return 1;
     }
 
     // Affichage du graphe initial
     printf("\n--- Graphe converti ---\n");
-    printf("Nombre de noeuds : %d\n", graph->V);
+    printf("Nombre de nœuds : %d\n", graph->V);
     for (int i = 0; i < graph->V; i++)
     {
         if (graph->nodes[i].name)
-            printf("Noeud %d : %s\n", i + 1, graph->nodes[i].name);
+            printf("Nœud %d : %s, Type: %s\n", i + 1, graph->nodes[i].name, graph->nodes[i].type);
         AdjListNode *adj = graph->array[i].head;
         while (adj)
         {
-            printf("  -> Vers noeud %d | Distance: %.2f, Temps: %.2f, Cout: %.2f\n",
-                   adj->dest + 1, adj->attr.distance, adj->attr.baseTime, adj->attr.cost);
+            printf("  -> Vers nœud %d | Distance: %.2f, Temps: %.2f, Coût: %.2f, WeatherType: %d\n",
+                   adj->dest + 1, adj->attr.distance, adj->attr.baseTime, adj->attr.cost, adj->attr.weatherType);
             adj = adj->next;
         }
     }
 
-    // Utilisation des fonctions de manipulation après construction :
-    // Exemple : ajout d'un nouveau noeud
-    addNode(&graph, "Noeud 6", 1.0f, 1.0f, 1.0f);
-    // Exemple : ajout d'une arete vers le nouveau noeud (depuis le noeud 1)
-    EdgeAttr attr = {500.0f, 400.0f, 8000.0f, 0, 1.0f, 1, 0};
+    // Ajout d'un nouveau nœud et d'une arête vers ce nœud
+    addNode(&graph, "Nœud 6", 1.0f, 1.0f, 1.0f);
+    EdgeAttr attr = {500.0f, 400.0f, 8000.0f, 0, 1.0f, 1, 1}; // weatherType = 1 (ex : pluie)
     addEdgeToGraph(graph, 0, graph->V - 1, attr);
 
-    // Affichage du graphe modifie
-    printf("\n--- Graphe modifie ---\n");
-    printf("Nombre de noeuds : %d\n", graph->V);
+    printf("\n--- Graphe modifié ---\n");
+    printf("Nombre de nœuds : %d\n", graph->V);
     for (int i = 0; i < graph->V; i++)
     {
         if (graph->nodes[i].name)
-            printf("Noeud %d : %s\n", i + 1, graph->nodes[i].name);
+            printf("Nœud %d : %s, Type: %s\n", i + 1, graph->nodes[i].name, graph->nodes[i].type);
         AdjListNode *adj = graph->array[i].head;
         while (adj)
         {
-            printf("  -> Vers noeud %d | Distance: %.2f, Temps: %.2f, Cout: %.2f\n",
-                   adj->dest + 1, adj->attr.distance, adj->attr.baseTime, adj->attr.cost);
+            printf("  -> Vers nœud %d | Distance: %.2f, Temps: %.2f, Coût: %.2f, WeatherType: %d\n",
+                   adj->dest + 1, adj->attr.distance, adj->attr.baseTime, adj->attr.cost, adj->attr.weatherType);
             adj = adj->next;
         }
     }
 
-    // Suppression d'une arete (exemple : supprimer l'arete de noeud 1 vers noeud 4)
+    // Suppression d'une arête (exemple : supprimer l'arête de nœud 1 vers nœud 4)
     removeEdgeFromGraph(graph, 0, 3);
-    // Suppression d'un noeud (exemple : supprimer le noeud 2)
+    // Suppression d'un nœud (exemple : supprimer le nœud 2)
     removeNode(graph, 1);
 
-    // Parcours DFS et BFS
     DFS(graph, 0);
     BFS(graph, 0);
 
-    // Creation et affichage de la matrice des plus courts chemins
     double **distanceMatrix = createDistanceMatrix(graph);
     floydWarshall(graph->V, distanceMatrix);
     printDistanceMatrix(graph->V, distanceMatrix);
     freeDistanceMatrix(graph->V, distanceMatrix);
 
-    // Liberation du graphe
-    freeGraph(graph);
+    // Libération du graphe
+    for (int i = 0; i < graph->V; i++)
+    {
+        if (graph->nodes[i].name)
+        {
+            free(graph->nodes[i].name);
+            free(graph->nodes[i].type);
+        }
+    }
+    free(graph->nodes);
+    for (int i = 0; i < graph->V; i++)
+    {
+        AdjListNode *cur = graph->array[i].head;
+        while (cur)
+        {
+            AdjListNode *temp = cur;
+            cur = cur->next;
+            free(temp);
+        }
+    }
+    free(graph->array);
+    free(graph);
 
     printf("Appuyez sur une touche pour continuer...\n");
     system("pause");
