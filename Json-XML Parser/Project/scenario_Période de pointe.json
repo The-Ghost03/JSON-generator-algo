@@ -1,0 +1,36 @@
+{
+  "date": "2025-12-23",
+  "conditions": {
+    "trafic": "congestionné",
+    "météo": "chaleur",
+    "incident": "retard général des départs"
+  },
+  "colis": [
+    { "id": 1, "origine": 1, "destination": 25, "volume": 40, "priorite": "express", "deadline": "12:00" },
+    { "id": 2, "origine": 1, "destination": 30, "volume": 60, "priorite": "standard", "deadline": "16:00" },
+    { "id": 3, "origine": 2, "destination": 45, "volume": 50, "priorite": "fragile", "deadline": "15:00" },
+    { "id": 4, "origine": 2, "destination": 50, "volume": 80, "priorite": "express", "deadline": "13:30" },
+    { "id": 5, "origine": 3, "destination": 60, "volume": 30, "priorite": "standard", "deadline": "17:00" },
+    { "id": 6, "origine": 1, "destination": 18, "volume": 55, "priorite": "standard", "deadline": "18:00" }
+  ],
+  "vehicules": [
+    {
+      "id": 1,
+      "type": "camion",
+      "capacite": 200,
+      "dispo_debut": "09:00",
+      "dispo_fin": "17:00",
+      "cout_par_km": 600,
+      "position": 1
+    },
+    {
+      "id": 2,
+      "type": "fourgon",
+      "capacite": 100,
+      "dispo_debut": "10:00",
+      "dispo_fin": "16:00",
+      "cout_par_km": 450,
+      "position": 2
+    }
+  ]
+}

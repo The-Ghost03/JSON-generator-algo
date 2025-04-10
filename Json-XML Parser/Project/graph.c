@@ -85,7 +85,8 @@ void removeEdgeFromGraph(Graph *graph, int src, int dest)
     }
 }
 
-void addNode(Graph **graphPtr, const char *name, float cong_morning, float cong_afternoon, float cong_night)
+void addNode(Graph **graphPtr, const char *name, const char *type,
+             float cong_morning, float cong_afternoon, float cong_night)
 {
     Graph *graph = *graphPtr;
     int newV = graph->V + 1;
@@ -103,9 +104,11 @@ void addNode(Graph **graphPtr, const char *name, float cong_morning, float cong_
         return;
     }
     graph->array = newAdj;
+
+    // Initialisation du nouveau nœud avec le nom et le type fourni
     graph->nodes[newV - 1].id = newV;
     graph->nodes[newV - 1].name = strdup(name);
-    graph->nodes[newV - 1].type = strdup("undefined");
+    graph->nodes[newV - 1].type = strdup(type);
     graph->nodes[newV - 1].coordinates[0] = 0.0f;
     graph->nodes[newV - 1].coordinates[1] = 0.0f;
     graph->nodes[newV - 1].capacity = 0;

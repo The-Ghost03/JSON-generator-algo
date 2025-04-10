@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "graph.h"
+#include "scenario.h"
 #include "parser.h"
 #include "graph_applications.h"
 #include "optimize.h" // Ce header contient également les définitions de Delivery et Vehicle.
@@ -47,7 +48,7 @@ int main(void)
         if (json_root)
         {
             printf("\n--- Structure JSON construite ---\n");
-            print_json(json_root, 0);
+            /*  print_json(json_root, 0);*/
             graph = buildGraphFromJson(json_root);
             free_json(json_root);
         }
@@ -63,7 +64,7 @@ int main(void)
         if (xml_root)
         {
             printf("\n--- Structure XML construite ---\n");
-            print_xml(xml_root, 0);
+            /*  print_xml(xml_root, 0);*/
             graph = buildGraphFromXml(xml_root);
             free_xml(xml_root);
         }
@@ -152,6 +153,18 @@ int main(void)
     free(artPoints);
 
     computeConnectivityStats(graph);
+
+    // Charger le scénario depuis le fichier "scenario.json"
+    Scenario *sc = loadScenarioFromJSON("scenario.json");
+    if (sc)
+    {
+        applyScenario(sc, graph);
+        freeScenario(sc);
+    }
+    else
+    {
+        printf("Aucun scénario chargé.\n");
+    }
 
     /* Libération du graphe */
     freeGraph(graph);

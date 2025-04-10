@@ -216,7 +216,7 @@ void computeConnectivityStats(Graph *graph)
             compSize[compCount - 1] = stackSize;
         }
     }
-    printf("\n--- Statistiques de connectivité ---\n");
+    printf("\n--- Statistiques de connectivite ---\n");
     printf("Nombre de composantes connexes : %d\n", compCount);
     for (int c = 0; c < compCount; c++)
     {

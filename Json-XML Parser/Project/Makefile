@@ -20,5 +20,8 @@ graph_applications.o: graph_applications.c graph_applications.h graph.h
 optimize.o: optimize.c optimize.h graph.h
 	$(CC) $(CFLAGS) -c optimize.c
 
+scenario.o: scenario.c scenario.h graph.h
+	$(CC) $(CFLAGS) -c scenario.c
+
 clean:
 	rm -f *.o my_program.exe

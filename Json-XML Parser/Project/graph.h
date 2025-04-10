@@ -53,7 +53,7 @@ typedef struct
 Graph *createGraph(int V);
 void addEdgeToGraph(Graph *graph, int src, int dest, EdgeAttr attr);
 void removeEdgeFromGraph(Graph *graph, int src, int dest);
-void addNode(Graph **graphPtr, const char *name, float cong_morning, float cong_afternoon, float cong_night);
+void addNode(Graph **graphPtr, const char *name, const char *type, float cong_morning, float cong_afternoon, float cong_night);
 void removeNode(Graph *graph, int node);
 void freeGraph(Graph *graph);
 

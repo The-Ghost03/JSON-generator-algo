@@ -1,0 +1,32 @@
+{
+  "date": "2025-09-14",
+  "conditions": {
+    "trafic": "ralenti",
+    "météo": "pluie intense",
+    "incident": "plusieurs routes fermées et un camion en panne"
+  },
+  "colis": [
+    { "id": 1, "origine": 1, "destination": 35, "volume": 40, "priorite": "urgence_médicale", "deadline": "11:00" },
+    { "id": 2, "origine": 2, "destination": 40, "volume": 50, "priorite": "fragile", "deadline": "13:00" },
+    { "id": 3, "origine": 1, "destination": 60, "volume": 70, "priorite": "standard", "deadline": "16:00" },
+    { "id": 4, "origine": 3, "destination": 70, "volume": 90, "priorite": "express", "deadline": "14:00" },
+    { "id": 5, "origine": 4, "destination": 80, "volume": 40, "priorite": "standard", "deadline": "17:30" }
+  ],
+  "vehicules": [
+    {
+      "id": 1,
+      "type": "camion",
+      "capacite": 180,
+      "dispo_debut": "09:30",
+      "dispo_fin": "17:00",
+      "cout_par_km": 700,
+      "position": 1
+    }
+    // Un deuxième camion est normalement prévu mais est en panne
+  ],
+  "routes_indisponibles": [
+    { "source": 1, "destination": 40 },
+    { "source": 2, "destination": 60 },
+    { "source": 3, "destination": 70 }
+  ]
+}

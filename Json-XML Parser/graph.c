@@ -835,7 +835,7 @@ void removeEdgeFromGraph(Graph *graph, int src, int dest)
     }
 }
 
-void addNode(Graph **graphPtr, const char *name, float cong_morning, float cong_afternoon, float cong_night)
+void addNode(Graph **graphPtr, const char *name, const char *type, float cong_morning, float cong_afternoon, float cong_night)
 {
     Graph *graph = *graphPtr;
     int newV = graph->V + 1;
