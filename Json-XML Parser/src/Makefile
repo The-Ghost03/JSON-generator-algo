@@ -1,68 +1,35 @@
-# Makefile racine (à placer dans Project/Makefile)
+# Makefile pour ProjetAlgo
 
-# Compilateur et flags
-CC       := gcc
-CFLAGS   := -I./src -Wall -Wextra -g
-LDFLAGS  :=
+CC      := gcc
+CFLAGS  := -std=c11 -Wall -Wextra -pedantic
+INCLUDES:= -I. -Iio -Igraph -Ioptimize -Iscenario -Iutils
 
-# Répertoires
-SRC_DIR    := src
-BIN_DIR    := bin
-TEST_DIR   := $(SRC_DIR)/tests
+SRC := \
+  main.c \
+  cli.c \
+  io/io_utils.c \
+  io/parser_json.c \
+  io/parser_xml.c \
+  graph/graph.c \
+  graph/graph_applications.c \
+  optimize/optimize.c \
+  optimize/scheduler.c \
+  scenario/scenario.c \
+  utils/logger.c \
+  utils/error.c
 
-# Liste des .c à compiler pour le projet
-SRC_FILES := \
-  $(SRC_DIR)/main.c \
-  $(SRC_DIR)/cli.c \
-  $(wildcard $(SRC_DIR)/io/*.c) \
-  $(wildcard $(SRC_DIR)/graph/*.c) \
-  $(wildcard $(SRC_DIR)/optimize/*.c) \
-  $(wildcard $(SRC_DIR)/scenario/*.c) \
-  $(wildcard $(SRC_DIR)/utils/*.c)
+OBJ := $(SRC:.c=.o)
 
-OBJ_FILES := $(SRC_FILES:.c=.o)
+.PHONY: all clean
 
-# Tests unitaires
-TEST_SRC_FILES := $(wildcard $(TEST_DIR)/test_*.c)
-TEST_OBJ_FILES := $(TEST_SRC_FILES:.c=.o)
-TEST_BIN        := $(BIN_DIR)/run_tests
+all: projetalgo
 
-# Exécutable principal
-TARGET := $(BIN_DIR)/projetalgo
+projetalgo: $(OBJ)
+	$(CC) $(CFLAGS) $(INCLUDES) -o $@ $(OBJ)
 
-.PHONY: all clean test
-
-# --- Règles principales ---
-
-all: $(TARGET)
-
-$(BIN_DIR):
-	mkdir -p $(BIN_DIR)
-
-# Construction de l'exécutable principal
-$(TARGET): | $(BIN_DIR) $(OBJ_FILES)
-	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(OBJ_FILES)
-
-# Compilation des .o pour le projet
-$(SRC_DIR)/%.o: $(SRC_DIR)/%.c
-	$(CC) $(CFLAGS) -c $< -o $@
-
-# --- Tests ---
-
-test: $(TEST_BIN)
-	./$(TEST_BIN)
-
-# Construction de l'exécutable de tests
-$(TEST_BIN): | $(BIN_DIR) $(OBJ_FILES) $(TEST_OBJ_FILES)
-	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(OBJ_FILES) $(TEST_OBJ_FILES)
-
-# Compilation des .o pour les tests
-$(TEST_DIR)/%.o: $(TEST_DIR)/%.c
-	$(CC) $(CFLAGS) -c $< -o $@
-
-# --- Nettoyage ---
+# règle générique pour compiler un .c en .o
+%.o: %.c
+	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
 
 clean:
-	rm -rf $(BIN_DIR) \
-	       $(OBJ_FILES) \
-	       $(TEST_OBJ_FILES)
+	rm -f $(OBJ) projetalgo

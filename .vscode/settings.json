@@ -10,6 +10,7 @@
         "parser.h": "c",
         "stdlib.h": "c",
         "graph.h": "c",
-        "graph_applications.h": "c"
+        "graph_applications.h": "c",
+        "scenario.h": "c"
     }
 }
