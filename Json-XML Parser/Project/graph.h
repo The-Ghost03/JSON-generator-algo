@@ -2,59 +2,78 @@
 #ifndef GRAPH_H
 #define GRAPH_H
 
-/* Structure représentant un nœud du graphe */
-typedef struct
-{
-    int id;               // Identifiant unique
-    char *name;           // Nom (ex: "Hub Abidjan")
-    char *type;           // Type ("hub", "relay", "delivery", etc.)
-    float coordinates[2]; // [latitude, longitude]
-    int capacity;         // Capacité du nœud
-    /* Facteurs de congestion pour moduler le temps de parcours */
-    float congestion_morning;
-    float congestion_afternoon;
-    float congestion_night;
-} Node;
+#include <stddef.h>
 
-/* Structure représentant les attributs d'une arête */
+/**
+ * Valeur utilisée pour représenter l'absence de connexion directe
+ * entre deux nœuds (i ≠ j) dans la matrice des distances.
+ */
+#ifndef INF
+#define INF (1.0f / 0.0f)
+#endif
+
+/**
+ * Attributs d’une arête orientée u → v :
+ */
 typedef struct
 {
-    float distance;    // Distance (km)
-    float baseTime;    // Temps de parcours de base (minutes)
-    float cost;        // Coût
-    int roadType;      // Type de route (0 = asphalte, 1 = latérite, etc.)
-    float reliability; // Fiabilité (entre 0 et 1)
-    int restrictions;  // Restrictions (codées, ex en bits)
-    int weatherType;   // Type de météo (0 = normal, 1 = pluie, 2 = vent, etc.)
+    float distance;    /**< longueur (km, m, etc.) */
+    float baseTime;    /**< temps de parcours de base (min, h…) */
+    float cost;        /**< coût associé (carburant, péage…) */
+    float reliability; /**< fiabilité (0.0 = pas fiable, 1.0 = fiable) */
+    int roadType;      /**< code du type de route (enum/bitfield) */
+    int restrictions;  /**< code des restrictions (poids, hauteur…) */
 } EdgeAttr;
 
-/* Structures pour la liste d'adjacence */
-typedef struct AdjListNode
-{
-    int dest;                 // Indice de destination
-    EdgeAttr attr;            // Attributs de l'arête
-    struct AdjListNode *next; // Pointeur vers l'élément suivant
-} AdjListNode;
-
+/**
+ * Graphe à V sommets numérotés 0..V-1.
+ *
+ * - dist[i][j]  = distance de i → j, ou INF si pas d’arête
+ * - attrs[i][j] = attributs complets de l’arête i → j
+ */
 typedef struct
 {
-    AdjListNode *head; // Tête de la liste d'adjacence
-} AdjList;
-
-/* Structure du graphe */
-typedef struct
-{
-    int V;          // Nombre de nœuds
-    Node *nodes;    // Tableau des nœuds
-    AdjList *array; // Tableau des listes d'adjacence
+    int V;            /**< nombre de sommets */
+    float **dist;     /**< matrice V×V des distances */
+    EdgeAttr **attrs; /**< matrice V×V des attributs */
 } Graph;
 
-/* Prototypes de manipulation du graphe */
-Graph *createGraph(int V);
-void addEdgeToGraph(Graph *graph, int src, int dest, EdgeAttr attr);
-void removeEdgeFromGraph(Graph *graph, int src, int dest);
-void addNode(Graph **graphPtr, const char *name, float cong_morning, float cong_afternoon, float cong_night);
-void removeNode(Graph *graph, int node);
-void freeGraph(Graph *graph);
+/**
+ * Crée un graphe à V sommets :
+ *  - alloue dist (float**) et attrs (EdgeAttr**)
+ *  - initialise dist[i][i]=0, dist[i][j]=INF pour i≠j
+ *  - zero attrs (à remplir via add_edge)
+ *
+ * @param V nombre de sommets
+ * @return pointeur sur Graph, ou NULL en erreur
+ */
+Graph *create_graph(int V);
+
+/**
+ * Ajoute ou remplace l’arête u → v :
+ *  - met dist[u][v] = attr->distance
+ *  - copie *attr dans attrs[u][v]
+ *
+ * @param g    graphe
+ * @param u    sommet source (0 ≤ u < g->V)
+ * @param v    sommet destination
+ * @param attr attributs de l’arête
+ */
+void add_edge(Graph *g, int u, int v, const EdgeAttr *attr);
+
+/**
+ * Renvoie la distance i → j (INF si pas d’arête).
+ */
+float get_edge_distance(const Graph *g, int i, int j);
+
+/**
+ * Renvoie pointeur vers EdgeAttr i → j (la distance INF indique l'absence).
+ */
+const EdgeAttr *get_edge_attr(const Graph *g, int i, int j);
+
+/**
+ * Libère toute la mémoire allouée au graphe.
+ */
+void free_graph(Graph *g);
 
 #endif /* GRAPH_H */

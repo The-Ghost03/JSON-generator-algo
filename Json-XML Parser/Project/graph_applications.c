@@ -1,227 +1,230 @@
 /* graph_applications.c */
 #include <stdio.h>
 #include <stdlib.h>
-#include "graph.h"
+#include <float.h>
+#include <string.h>
 #include "graph_applications.h"
+#include "graph.h"
 
-/* --- Détection de cycle (graphe non orienté) --- */
-static int DFSUtilDetectCycle(Graph *graph, int v, int parent, int *visited)
+#ifndef INF
+#define INF (1.0f / 0.0f)
+#endif
+
+//--- 1. Détection de cycle (DFS sur matrice) ---
+static void dfs_cycle(const Graph *g, int u, int parent, int *vis, int *found)
 {
-    visited[v] = 1;
-    AdjListNode *adj = graph->array[v].head;
-    while (adj)
+    vis[u] = 1;
+    for (int v = 0; v < g->V && !*found; v++)
     {
-        int w = adj->dest;
-        if (!visited[w])
+        if (g->dist[u][v] != INF)
         {
-            if (DFSUtilDetectCycle(graph, w, v, visited))
-                return 1;
+            if (!vis[v])
+                dfs_cycle(g, v, u, vis, found);
+            else if (v != parent)
+                *found = 1;
         }
-        else if (w != parent)
-        {
-            return 1;
-        }
-        adj = adj->next;
     }
-    return 0;
 }
 
-int detectCycle(Graph *graph)
+int detectCycle(Graph *g)
 {
-    int *visited = calloc(graph->V, sizeof(int));
-    if (!visited)
-        return 0;
-    int cycleFound = 0;
-    for (int i = 0; i < graph->V; i++)
-    {
-        if (!visited[i] && graph->nodes[i].name != NULL)
-        {
-            if (DFSUtilDetectCycle(graph, i, -1, visited))
-            {
-                cycleFound = 1;
-                break;
-            }
-        }
-    }
-    free(visited);
-    return cycleFound;
+    int *vis = calloc(g->V, sizeof(int));
+    int found = 0;
+    for (int i = 0; i < g->V && !found; i++)
+        if (!vis[i])
+            dfs_cycle(g, i, -1, vis, &found);
+    free(vis);
+    return found;
 }
 
-/* --- Vérification d'accessibilité (BFS) --- */
-int isReachable(Graph *graph, int start, int target)
+//--- 2. Accessibilité (BFS sur matrice) ---
+int isReachable(Graph *g, int src, int tgt)
 {
-    if (start < 0 || start >= graph->V || target < 0 || target >= graph->V)
+    if (src < 0 || tgt < 0 || src >= g->V || tgt >= g->V)
         return 0;
-    int *visited = calloc(graph->V, sizeof(int));
-    if (!visited)
-        return 0;
-    int *queue = malloc(graph->V * sizeof(int));
-    if (!queue)
-    {
-        free(visited);
-        return 0;
-    }
+    int *vis = calloc(g->V, sizeof(int));
+    int *queue = malloc(g->V * sizeof(int));
     int front = 0, rear = 0;
-    visited[start] = 1;
-    queue[rear++] = start;
-    int reachable = 0;
+    vis[src] = 1;
+    queue[rear++] = src;
     while (front < rear)
     {
-        int current = queue[front++];
-        if (current == target)
+        int u = queue[front++];
+        if (u == tgt)
         {
-            reachable = 1;
-            break;
+            free(queue);
+            free(vis);
+            return 1;
         }
-        AdjListNode *adj = graph->array[current].head;
-        while (adj)
+        for (int v = 0; v < g->V; v++)
         {
-            if (!visited[adj->dest])
+            if (g->dist[u][v] != INF && !vis[v])
             {
-                visited[adj->dest] = 1;
-                queue[rear++] = adj->dest;
+                vis[v] = 1;
+                queue[rear++] = v;
             }
-            adj = adj->next;
         }
     }
     free(queue);
-    free(visited);
-    return reachable;
+    free(vis);
+    return 0;
 }
 
-/* --- Composantes connexes via DFS --- */
-static void DFSUtilCC(Graph *graph, int v, int compIndex, int *visited, int *components)
+//--- 3. Composantes connexes (DFS) ---
+static void dfs_cc(const Graph *g, int u, int cid, int *vis, int *comp)
 {
-    visited[v] = 1;
-    components[v] = compIndex;
-    AdjListNode *adj = graph->array[v].head;
-    while (adj)
-    {
-        if (!visited[adj->dest] && graph->nodes[adj->dest].name != NULL)
-            DFSUtilCC(graph, adj->dest, compIndex, visited, components);
-        adj = adj->next;
-    }
+    vis[u] = 1;
+    comp[u] = cid;
+    for (int v = 0; v < g->V; v++)
+        if (g->dist[u][v] != INF && !vis[v])
+            dfs_cc(g, v, cid, vis, comp);
 }
 
-int findConnectedComponents(Graph *graph, int *components)
+int findConnectedComponents(Graph *g, int *comp)
 {
-    int *visited = calloc(graph->V, sizeof(int));
-    if (!visited)
-        return 0;
-    int compIndex = 0;
-    for (int i = 0; i < graph->V; i++)
-    {
-        if (!visited[i] && graph->nodes[i].name != NULL)
-        {
-            compIndex++;
-            DFSUtilCC(graph, i, compIndex, visited, components);
-        }
-    }
-    free(visited);
-    return compIndex;
+    int *vis = calloc(g->V, sizeof(int));
+    int cid = 0;
+    for (int i = 0; i < g->V; i++)
+        if (!vis[i])
+            dfs_cc(g, i, ++cid, vis, comp);
+    free(vis);
+    return cid;
 }
 
-/* --- Points d'articulation (Tarjan simplifié) --- */
-static int timeGlobal;
-static void articulationDFS(Graph *graph, int u, int *visited, int *disc, int *low, int *parent, int *ap)
+//--- 4. Points d’articulation (Tarjan) ---
+static void tarjanAP(const Graph *g, int u, int *disc, int *low, int *par,
+                     int *vis, int *ap, int *tt)
 {
-    visited[u] = 1;
-    disc[u] = low[u] = ++timeGlobal;
+    vis[u] = 1;
+    disc[u] = low[u] = ++(*tt);
     int children = 0;
-    AdjListNode *adj = graph->array[u].head;
-    while (adj)
+    for (int v = 0; v < g->V; v++)
     {
-        int v = adj->dest;
-        if (!visited[v])
+        if (g->dist[u][v] == INF)
+            continue;
+        if (!vis[v])
         {
             children++;
-            parent[v] = u;
-            articulationDFS(graph, v, visited, disc, low, parent, ap);
-            if (low[v] < low[u])
-                low[u] = low[v];
-            if (parent[u] == -1 && children > 1)
-                ap[u] = 1;
-            if (parent[u] != -1 && low[v] >= disc[u])
+            par[v] = u;
+            tarjanAP(g, v, disc, low, par, vis, ap, tt);
+            low[u] = (low[v] < low[u] ? low[v] : low[u]);
+            if ((par[u] == -1 && children > 1) ||
+                (par[u] != -1 && low[v] >= disc[u]))
                 ap[u] = 1;
         }
-        else if (v != parent[u])
+        else if (v != par[u])
         {
-            if (disc[v] < low[u])
-                low[u] = disc[v];
+            low[u] = (disc[v] < low[u] ? disc[v] : low[u]);
         }
-        adj = adj->next;
     }
 }
 
-void findArticulationPoints(Graph *graph, int *artPoints)
+void findArticulationPoints(Graph *g, int *art)
 {
-    int *visited = calloc(graph->V, sizeof(int));
-    int *disc = calloc(graph->V, sizeof(int));
-    int *low = calloc(graph->V, sizeof(int));
-    int *parent = calloc(graph->V, sizeof(int));
-    for (int i = 0; i < graph->V; i++)
-    {
-        visited[i] = 0;
-        parent[i] = -1;
-        artPoints[i] = 0;
-    }
-    timeGlobal = 0;
-    for (int i = 0; i < graph->V; i++)
-    {
-        if (!visited[i] && graph->nodes[i].name != NULL)
-            articulationDFS(graph, i, visited, disc, low, parent, artPoints);
-    }
-    free(visited);
+    int V = g->V, time = 0;
+    int *disc = calloc(V, sizeof(int));
+    int *low = calloc(V, sizeof(int));
+    int *par = calloc(V, sizeof(int));
+    int *vis = calloc(V, sizeof(int));
+    memset(art, 0, V * sizeof(int));
+    for (int i = 0; i < V; i++)
+        par[i] = -1;
+    for (int i = 0; i < V; i++)
+        if (!vis[i])
+            tarjanAP(g, i, disc, low, par, vis, art, &time);
     free(disc);
     free(low);
-    free(parent);
+    free(par);
+    free(vis);
 }
 
-/* --- Statistiques de connectivité --- */
-void computeConnectivityStats(Graph *graph)
+//--- 5. Statistiques de connectivité ---
+void computeConnectivityStats(Graph *g)
 {
-    int *visited = calloc(graph->V, sizeof(int));
-    int *compSize = calloc(graph->V, sizeof(int));
-    if (!visited || !compSize)
-        return;
-    int compCount = 0;
-    for (int i = 0; i < graph->V; i++)
+    int V = g->V;
+    int *comp = malloc(V * sizeof(int));
+    int cnt = findConnectedComponents(g, comp);
+    int *sz = calloc(cnt, sizeof(int));
+    for (int i = 0; i < V; i++)
+        sz[comp[i] - 1]++;
+    printf("Composantes: %d\n", cnt);
+    for (int i = 0; i < cnt; i++)
+        printf("  #%d : %d nœuds\n", i + 1, sz[i]);
+    free(sz);
+    free(comp);
+}
+
+//--- 6. Floyd–Warshall (tous-pairs shortest paths) ---
+void floydWarshall(const Graph *g, float **outDist)
+{
+    int V = g->V;
+    // copier la matrice
+    for (int i = 0; i < V; i++)
+        for (int j = 0; j < V; j++)
+            outDist[i][j] = g->dist[i][j];
+    // DP
+    for (int k = 0; k < V; k++)
+        for (int i = 0; i < V; i++)
+            if (outDist[i][k] != INF)
+                for (int j = 0; j < V; j++)
+                    if (outDist[k][j] != INF &&
+                        outDist[i][j] > outDist[i][k] + outDist[k][j])
+                        outDist[i][j] = outDist[i][k] + outDist[k][j];
+}
+
+//--- 7. Bellman–Ford (origine unique) ---
+int bellmanFord(const Graph *g, int src, float *dist, int *pred)
+{
+    int V = g->V;
+    // init
+    for (int i = 0; i < V; i++)
     {
-        if (!visited[i] && graph->nodes[i].name != NULL)
+        dist[i] = INF;
+        pred[i] = -1;
+    }
+    dist[src] = 0;
+    // relaxation
+    for (int it = 1; it < V; it++)
+    {
+        int updated = 0;
+        for (int u = 0; u < V; u++)
         {
-            compCount++;
-            int stackSize = 0;
-            int *stack = malloc(graph->V * sizeof(int));
-            if (!stack)
-                break;
-            int top = -1;
-            stack[++top] = i;
-            visited[i] = 1;
-            while (top >= 0)
-            {
-                int v = stack[top--];
-                stackSize++;
-                AdjListNode *adj = graph->array[v].head;
-                while (adj)
+            for (int v = 0; v < V; v++)
+                if (g->dist[u][v] != INF)
                 {
-                    if (!visited[adj->dest])
+                    float w = g->dist[u][v];
+                    if (dist[u] != INF && dist[v] > dist[u] + w)
                     {
-                        visited[adj->dest] = 1;
-                        stack[++top] = adj->dest;
+                        dist[v] = dist[u] + w;
+                        pred[v] = u;
+                        updated = 1;
                     }
-                    adj = adj->next;
                 }
-            }
-            free(stack);
-            compSize[compCount - 1] = stackSize;
         }
+        if (!updated)
+            break;
     }
-    printf("\n--- Statistiques de connectivité ---\n");
-    printf("Nombre de composantes connexes : %d\n", compCount);
-    for (int c = 0; c < compCount; c++)
-    {
-        printf("  Composante %d - Taille: %d\n", c + 1, compSize[c]);
-    }
-    free(compSize);
-    free(visited);
+    // détection de cycle négatif
+    for (int u = 0; u < V; u++)
+        for (int v = 0; v < V; v++)
+            if (g->dist[u][v] != INF &&
+                dist[u] != INF && dist[v] > dist[u] + g->dist[u][v])
+                return -1;
+    return 0;
+}
+
+//--- 8. Squelettes TSP et GA (à compléter) ---
+float solveTSP_DP(const Graph *g, int start, int **outTour)
+{
+    // TODO: implémenter DP (bitmask + memo)
+    return -1.0f;
+}
+float solveTSP_Greedy(const Graph *g, int start, int *outTour)
+{
+    // TODO: implémenter heuristique nearest-neighbor
+    return -1.0f;
+}
+void geneticTSP(const Graph *g, int popSize, int generations, GA_Indiv *outBest)
+{
+    // TODO: initialiser population, boucler cross/mutation, sélectionner
 }

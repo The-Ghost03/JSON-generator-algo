@@ -1,24 +1,46 @@
-CC = gcc
-CFLAGS = -Wall -Wextra -std=c99
-OBJ = main.o graph.o parser.o graph_applications.o optimize.o
+# Makefile
 
-my_program.exe: $(OBJ)
-	$(CC) $(CFLAGS) -o my_program.exe $(OBJ)
+# Compilateur et flags
+CC      := gcc
+CFLAGS  := -Wall -Wextra -std=c11 -I.        # on inclut le dossier courant
+LDFLAGS :=                               
 
-main.o: main.c graph.h parser.h graph_applications.h optimize.h
-	$(CC) $(CFLAGS) -c main.c
+# Récupère tous les .c du dossier courant
+SRCS    := $(wildcard *.c)
+# En déduit les .o
+OBJS    := $(SRCS:.c=.o)
 
-graph.o: graph.c graph.h
-	$(CC) $(CFLAGS) -c graph.c
+# Nom de la bibliothèque statique et de l'exécutable
+LIB     := libprojet.a
 
-parser.o: parser.c parser.h graph.h
-	$(CC) $(CFLAGS) -c parser.c
+ifeq ($(OS),Windows_NT)
+  TARGET := projet_algo.exe
+  RM     := del /Q
+else
+  TARGET := projet_algo
+  RM     := rm -f
+endif
 
-graph_applications.o: graph_applications.c graph_applications.h graph.h
-	$(CC) $(CFLAGS) -c graph_applications.c
+.PHONY: all clean
 
-optimize.o: optimize.c optimize.h graph.h
-	$(CC) $(CFLAGS) -c optimize.c
+all: $(LIB) $(TARGET)
 
+# 1) Création de la lib à partir de tous les .o sauf main.o
+$(LIB): $(filter-out main.o,$(OBJS))
+	@echo "[AR] $@"
+	ar rcs $@ $^
+
+# 2) Edition de lien de l'exécutable : lie main.o avec la lib
+$(TARGET): main.o $(LIB)
+	@echo "[LD] $@"
+	$(CC) $(CFLAGS) $< -L. -lprojet -o $@ $(LDFLAGS)
+
+# 3) Règle générique de compilation
+%.o: %.c
+	@echo "[CC] $<"
+	$(CC) $(CFLAGS) -c $< -o $@
+
+# 4) Nettoyage
 clean:
-	rm -f *.o my_program.exe
+	@echo "[CLEAN]"
+	-$(RM) $(OBJS) $(LIB) $(TARGET)

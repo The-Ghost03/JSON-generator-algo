@@ -4,20 +4,27 @@
 
 #include "graph.h"
 
-/* Détecte les cycles dans le graphe (graphe non orienté) */
-int detectCycle(Graph *graph);
+/* Parcours de graphe de base */
+int detectCycle(Graph *g);
+int isReachable(Graph *g, int start, int target);
+int findConnectedComponents(Graph *g, int *components);
+void findArticulationPoints(Graph *g, int *artPoints);
+void computeConnectivityStats(Graph *g);
 
-/* Vérifie si le nœud target est accessible à partir du nœud start */
-int isReachable(Graph *graph, int start, int target);
+/* Programmation dynamique */
+void floydWarshall(const Graph *g, float **outDist);
+int bellmanFord(const Graph *g, int src, float *outDist, int *outPred);
 
-/* Remplit le tableau components (alloué par l'appelant) avec l'indice de composante de chaque nœud.
-   Retourne le nombre de composantes connexes. */
-int findConnectedComponents(Graph *graph, int *components);
+/* Voyageur de commerce (DP exact ou heuristique) */
+float solveTSP_DP(const Graph *g, int start, int **outTour);
+float solveTSP_Greedy(const Graph *g, int start, int *outTour);
 
-/* Détecte et marque les points d'articulation (nœuds critiques) dans le tableau artPoints */
-void findArticulationPoints(Graph *graph, int *artPoints);
-
-/* Calcule et affiche des statistiques sur la connectivité du graphe */
-void computeConnectivityStats(Graph *graph);
+/* Algorithme génétique basique pour TSP */
+typedef struct
+{
+   int *chromosome; /* séquence de noeuds */
+   float fitness;   /* distance totale ou coût */
+} GA_Indiv;
+void geneticTSP(const Graph *g, int popSize, int generations, GA_Indiv *outBest);
 
 #endif /* GRAPH_APPLICATIONS_H */
