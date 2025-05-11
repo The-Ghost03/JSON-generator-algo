@@ -1,0 +1,54 @@
+{
+  "date": "2025-04-11",
+  "conditions": {
+    "trafic": "normal",
+    "météo": "dégagée",
+    "incident": "aucun"
+  },
+  "colis": [
+    {
+      "id": 1,
+      "origine": 1,
+      "destination": 10,
+      "volume": 50,
+      "priorite": "standard",
+      "deadline": "18:00"
+    },
+    {
+      "id": 2,
+      "origine": 1,
+      "destination": 12,
+      "volume": 30,
+      "priorite": "express",
+      "deadline": "14:00"
+    },
+    {
+      "id": 3,
+      "origine": 2,
+      "destination": 18,
+      "volume": 60,
+      "priorite": "standard",
+      "deadline": "17:30"
+    }
+  ],
+  "vehicules": [
+    {
+      "id": 1,
+      "type": "camion",
+      "capacite": 150,
+      "dispo_debut": "08:00",
+      "dispo_fin": "18:00",
+      "cout_par_km": 500,
+      "position": 1
+    },
+    {
+      "id": 2,
+      "type": "utilitaire",
+      "capacite": 100,
+      "dispo_debut": "08:30",
+      "dispo_fin": "17:00",
+      "cout_par_km": 400,
+      "position": 2
+    }
+  ]
+}
